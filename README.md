@@ -13,19 +13,22 @@
    http://manikvarma.org/downloads/XC/XMLRepository.html#Bhatia15
 
 * Tree：
-. Label tree structure learning
-  http://www.cs.put.poznan.pl/kdembczynski/pdf/fastPLT-idss-2017.pdf
+------------------
+. Label tree structure learning  
+  http://www.cs.put.poznan.pl/kdembczynski/pdf/fastPLT-idss-2017.pdf  
 . FastXML:A Fast, Accurate and Stable Tree-classifier for eXtreme Multi-label Learning
 
 
 
 * Ｄｅｅｐ Ｌｅａｒｎｉｎｇ:
-. Deep Learning for Extreme Multi-label Text Classification
+-------------------------
+. Deep Learning for Extreme Multi-label Text Classification  
 . Tenforflow 實作：
-  https://blog.csdn.net/sinat_30665603/article/details/79888225
+  https://blog.csdn.net/sinat_30665603/article/details/79888225  
 
 
 * Ｌabel Ｒanking：
+-------------------------
 
 
 
