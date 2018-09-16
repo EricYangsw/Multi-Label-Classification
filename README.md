@@ -29,6 +29,9 @@
 * Order-Free RNN with Visual Attention for Multi-Label Classification  
   https://arxiv.org/pdf/1707.05495.pdf  
   https://www.youtube.com/watch?v=dGfCWUN-oFs  
+  
+* LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
+  https://arxiv.org/pdf/1710.10501.pdf  
 
 
 
