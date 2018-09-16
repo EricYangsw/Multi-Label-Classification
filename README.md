@@ -9,7 +9,7 @@
 
 2. 大資料維度（標籤數量 > 1000）：　ＸＭＬ（Extreme Multi-Label Classification） 問題
 * 總資源：
-   The Extreme Classification Repository: Multi-label Datasets & Code
+   The Extreme Classification Repository: Multi-label Datasets & Code  
    http://manikvarma.org/downloads/XC/XMLRepository.html#Bhatia15
 ------------------
 #### Tree：
