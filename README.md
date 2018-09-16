@@ -22,11 +22,13 @@
 ------------------
 #### Ｄｅｅｐ Ｌｅａｒｎｉｎｇ:
 * Deep Learning for Extreme Multi-label Text Classification  
+
 * Tenforflow 實作：
   https://blog.csdn.net/sinat_30665603/article/details/79888225  
-
-------------------
-#### Ｌabel Ｒanking：
+  
+* Order-Free RNN with Visual Attention for Multi-Label Classification  
+  https://arxiv.org/pdf/1707.05495.pdf  
+  https://www.youtube.com/watch?v=dGfCWUN-oFs  
 
 
 
