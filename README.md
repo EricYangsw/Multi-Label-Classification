@@ -21,11 +21,11 @@
 
    #### Concept：
     * PPT :Extreme Multi-label Classification for Information Retrieval XMLC4IR Tutorial at ECIR 2018   
-      [文獻連結](http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf) 
+  [文獻連結](http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf) 
       
     * Dataset：
       The Extreme Classification Repository: Multi-label Datasets & Code  
-      http://manikvarma.org/downloads/XC/XMLRepository.html#Bhatia15
+      http://manikvarma.org/downloads/XC/XMLRepository.html  
 
    #### Tree：
     * Label tree structure learning  
