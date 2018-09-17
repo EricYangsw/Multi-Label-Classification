@@ -28,7 +28,13 @@
 
 
   * * * *
-   #### Deep Learning：
+   #### Embeding Method：
+   * Deep Extreme Multi-label Learning
+
+
+
+  * * * *
+   #### Other Deep Learning：
    * Deep Learning for Extreme Multi-label Text Classification  
 
    * Tenforflow 實作：
@@ -40,7 +46,4 @@
 
    * LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
      https://arxiv.org/pdf/1710.10501.pdf  
-
-
-
 
