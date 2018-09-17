@@ -21,11 +21,15 @@
 
    #### Concept：
     * PPT :Extreme Multi-label Classification for Information Retrieval XMLC4IR Tutorial at ECIR 2018   
-  [文獻連結](http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf) 
+      [連結](http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf) 
       
     * Dataset：
       The Extreme Classification Repository: Multi-label Datasets & Code  
       http://manikvarma.org/downloads/XC/XMLRepository.html  
+
+   #### Graphic：
+    * Probabilistic Label Relation Graphs with Ising Models
+    
 
    #### Tree：
     * Label tree structure learning  
@@ -50,5 +54,5 @@
       https://arxiv.org/pdf/1807.11245.pdf  
 
     * LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
-     https://arxiv.org/pdf/1710.10501.pdf  
+      https://arxiv.org/pdf/1710.10501.pdf  
 
