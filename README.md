@@ -42,7 +42,10 @@
 
    * Order-Free RNN with Visual Attention for Multi-Label Classification  
      https://arxiv.org/pdf/1707.05495.pdf  
-     https://www.youtube.com/watch?v=dGfCWUN-oFs  
+     https://www.youtube.com/watch?v=dGfCWUN-oFs
+     
+   * Recurrently Exploring Class-wise Attention in A Hybrid Convolutional and Bidirectional LSTM Network for Multi-label Aerial Image Classification  
+     https://arxiv.org/pdf/1807.11245.pdf
 
    * LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
      https://arxiv.org/pdf/1710.10501.pdf  
