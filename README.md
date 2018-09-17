@@ -8,15 +8,17 @@
 1. 一般資料維度（標籤數量小於 < 1000）
 
 
+
+
 --------------------------
 2. 大資料維度（標籤數量 > 1000）：XML（Extreme Multi-Label Classification） 問題  
 
-* Dataset：
-   The Extreme Classification Repository: Multi-label Datasets & Code  
-   http://manikvarma.org/downloads/XC/XMLRepository.html#Bhatia15
-   
-* PPT :Extreme Multi-label Classification for Information Retrieval XMLC4IR Tutorial at ECIR 2018   
-  http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf  
+   * Dataset：
+      The Extreme Classification Repository: Multi-label Datasets & Code  
+      http://manikvarma.org/downloads/XC/XMLRepository.html#Bhatia15
+
+   * PPT :Extreme Multi-label Classification for Information Retrieval XMLC4IR Tutorial at ECIR 2018   
+     http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf  
   * * * *
    #### Tree：
 
