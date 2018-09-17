@@ -5,50 +5,49 @@
     類問題，並在此紀錄。
 
 
-### 依資料維度初步分成分類：  
---------------------------
-1. 一般資料維度（標籤數量小於 < 1000）
+### （依資料維度）粗分：  
+### 第一類：一般資料維度（標籤數量約小於 < 1000）
+
+
+    *
 
 
 
+### 第二類：高資料維度（標籤數量 > 1000）：XML（Extreme Multi-Label Classification） 問題  
 
---------------------------
-2. 大資料維度（標籤數量 > 1000）：XML（Extreme Multi-Label Classification） 問題  
-
-   * Dataset：
+    * Dataset：
       The Extreme Classification Repository: Multi-label Datasets & Code  
       http://manikvarma.org/downloads/XC/XMLRepository.html#Bhatia15
 
-   * PPT :Extreme Multi-label Classification for Information Retrieval XMLC4IR Tutorial at ECIR 2018   
-     http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf  
-  * * * *
+    * PPT :Extreme Multi-label Classification for Information Retrieval XMLC4IR Tutorial at ECIR 2018   
+      http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf  
+  
    #### Tree：
-
-   * Label tree structure learning  
+    * Label tree structure learning  
      http://www.cs.put.poznan.pl/kdembczynski/pdf/fastPLT-idss-2017.pdf  
-   * FastXML:A Fast, Accurate and Stable Tree-classifier for eXtreme Multi-label Learning
+    * FastXML:A Fast, Accurate and Stable Tree-classifier for eXtreme Multi-label Learning
 
 
-  * * * *
+ 
    #### Embeding Method：
-   * Deep Extreme Multi-label Learning
+    * Deep Extreme Multi-label Learning
 
 
 
-  * * * *
+ 
    #### Other Deep Learning：
-   * Deep Learning for Extreme Multi-label Text Classification  
+    * Deep Learning for Extreme Multi-label Text Classification  
 
-   * Tenforflow 實作：
-     https://blog.csdn.net/sinat_30665603/article/details/79888225  
+    * Tenforflow 實作：
+      https://blog.csdn.net/sinat_30665603/article/details/79888225  
 
-   * Order-Free RNN with Visual Attention for Multi-Label Classification  
-     https://arxiv.org/pdf/1707.05495.pdf  
-     https://www.youtube.com/watch?v=dGfCWUN-oFs
+    * Order-Free RNN with Visual Attention for Multi-Label Classification  
+      https://arxiv.org/pdf/1707.05495.pdf  
+      https://www.youtube.com/watch?v=dGfCWUN-oFs
      
-   * Recurrently Exploring Class-wise Attention in A Hybrid Convolutional and Bidirectional LSTM Network for Multi-label Aerial Image Classification  
-     https://arxiv.org/pdf/1807.11245.pdf
+    * Recurrently Exploring Class-wise Attention in A Hybrid Convolutional and Bidirectional LSTM Network for Multi-label Aerial Image Classification  
+      https://arxiv.org/pdf/1807.11245.pdf
 
-   * LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
+    * LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
      https://arxiv.org/pdf/1710.10501.pdf  
 
