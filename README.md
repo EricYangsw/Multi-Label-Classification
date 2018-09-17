@@ -67,6 +67,7 @@
 
 
 #### 比較 Object Detecting
-    * Object Detecting 是想辦法將畫面切分成多個物件區域後在進行分類預測，與Multi-Lable 有本質上的不同
+    * Object Detecting 是想辦法將畫面切分成多個物件區域後在進行分類預測，其最複雜的地方在於定位，與Multi-Lable 有本質上的不同
+      
       參考文章: 關於影像辨識，所有你應該知道的深度學習模型
       [文章連結]https://medium.com/@syshen/%E7%89%A9%E9%AB%94%E5%81%B5%E6%B8%AC-object-detection-740096ec4540
