@@ -18,26 +18,26 @@
 * PPT :Extreme Multi-label Classification for Information Retrieval XMLC4IR Tutorial at ECIR 2018   
   http://www.cs.put.poznan.pl/kdembczynski/xmlc-tutorial-ecir-2018/xmlc4ir-2018.pdf  
   * * * *
-#### Tree：
+   #### Tree：
 
-* Label tree structure learning  
-  http://www.cs.put.poznan.pl/kdembczynski/pdf/fastPLT-idss-2017.pdf  
-* FastXML:A Fast, Accurate and Stable Tree-classifier for eXtreme Multi-label Learning
+   * Label tree structure learning  
+     http://www.cs.put.poznan.pl/kdembczynski/pdf/fastPLT-idss-2017.pdf  
+   * FastXML:A Fast, Accurate and Stable Tree-classifier for eXtreme Multi-label Learning
 
 
-***********************
-#### Deep Learning：
-* Deep Learning for Extreme Multi-label Text Classification  
+  * * * *
+   #### Deep Learning：
+   * Deep Learning for Extreme Multi-label Text Classification  
 
-* Tenforflow 實作：
-  https://blog.csdn.net/sinat_30665603/article/details/79888225  
-  
-* Order-Free RNN with Visual Attention for Multi-Label Classification  
-  https://arxiv.org/pdf/1707.05495.pdf  
-  https://www.youtube.com/watch?v=dGfCWUN-oFs  
-  
-* LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
-  https://arxiv.org/pdf/1710.10501.pdf  
+   * Tenforflow 實作：
+     https://blog.csdn.net/sinat_30665603/article/details/79888225  
+
+   * Order-Free RNN with Visual Attention for Multi-Label Classification  
+     https://arxiv.org/pdf/1707.05495.pdf  
+     https://www.youtube.com/watch?v=dGfCWUN-oFs  
+
+   * LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
+     https://arxiv.org/pdf/1710.10501.pdf  
 
 
 
