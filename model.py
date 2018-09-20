@@ -58,7 +58,6 @@ class Multi_Label_Class(BaseModel):
         conv5_1_feats = self.nn.conv2d(pool4_feats, 512, name = 'conv5_1')
         conv5_2_feats = self.nn.conv2d(conv5_1_feats, 512, name = 'conv5_2')
         conv5_3_feats = self.nn.conv2d(conv5_2_feats, 512, name = 'conv5_3')
-
         reshaped_conv5_3_feats = tf.reshape(conv5_3_feats,
                                             [config.batch_size, 196, 512])
 

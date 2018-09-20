@@ -45,13 +45,16 @@ class Config(object):
         self.summary_dir = './summary_8k/'
 
         # about the vocabulary
-        self.vocabulary_file = './vocabulary.csv'
-        self.vocabulary_size = 5000
+        #self.vocabulary_file = './vocabulary.csv'
+        #self.vocabulary_size = 5000
 
         # about the training
-        self.train_image_dir = './train/images/'
-        self.train_caption_file = './train/captions_train2014.json'
-        self.temp_annotation_file = './train/anns.csv'
+        self.X_train_data = './train_data'
+        self.Y_train_data = './train_data'
+
+        self.data_step = 10
+        #self.train_caption_file = './train/captions_train2014.json'
+        #self.temp_annotation_file = './train/anns.csv'
         self.temp_data_file = './train/data.npy'
 
         # about the evaluation

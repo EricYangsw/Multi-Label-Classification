@@ -3,16 +3,16 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import pickle
 import copy
 import json
-from tqdm import tqdm
+from utils.nn import NN
 
 # self-definded package & modules 
-#from utils.coco.coco import COCO
-#from utils.coco.pycocoevalcap.eval import COCOEvalCap
-from utils.nn import NN
-from utils.misc import ImageLoader, CaptionData, TopN
+# from utils.coco.coco import COCO
+# from utils.coco.pycocoevalcap.eval import COCOEvalCap
+# from utils.misc import ImageLoader, CaptionData, TopN
 
 
 class BaseModel(object):
@@ -21,7 +21,7 @@ class BaseModel(object):
         self.is_train = True if config.phase == 'train' else False
         self.train_cnn = self.is_train and config.train_cnn
         self.image_shape = [10, 8192, 1] # input shape
-        self.nn = NN(config) #?????
+        self.nn = NN(config) # Base cnn unit 
         self.global_step = tf.Variable(0,
                                        name = 'global_step',
                                        trainable = False)
@@ -56,7 +56,7 @@ class BaseModel(object):
             if v.name in data_dict.keys():
                 sess.run(v.assign(data_dict[v.name]))
                 count += 1
-        print("%d tensors loaded." %count)
+        print("%d tensors loaded....." %count)
 
 
     def load_cnn(self, session, data_path, ignore_missing=True):
@@ -76,8 +76,8 @@ class BaseModel(object):
         print("%d tensors loaded." %count)
 
 
+
     def train(self, sess, train_data):
-        """ Train the model using the COCO train2014 data. """
         print("Training the model.........")
         config = self.config
 
@@ -88,27 +88,27 @@ class BaseModel(object):
 
         for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
             for _ in tqdm(list(range(train_data.num_batches)), desc='batch'):
-                batch = train_data.next_batch()
-                image_files, sentences, masks = batch
-                images = self.image_loader.load_images(image_files)
+                batch = train_data.next_batch() 
+                images, sentences, masks = batch
+                # images = self.image_loader.load_images(image_files)
                 feed_dict = {self.images: images,
                              self.sentences: sentences,
-                             self.masks: masks}
-                _, summary, global_step = sess.run([self.opt_op,
-                                                    self.summary,
+                             self.masks: masks} # what masks can ????
+                _, summary, global_step = sess.run([self.opt_op, #in model.build_optimizer()
+                                                    self.summary,#in model.build_summary()
                                                     self.global_step],
                                                     feed_dict=feed_dict)
                 if (global_step + 1) % config.save_period == 0:
                     self.save()
                 train_writer.add_summary(summary, global_step)
-            train_data.reset()
-
+            train_data.reset() # reset() ???
         self.save()
         train_writer.close()
-        print("Training complete.")
+        print("Training complete.....")
+
+
 
     def eval(self, sess, eval_gt_coco, eval_data, vocabulary):
-        """ Evaluate the model using the COCO val2014 data. """
         print("Evaluating the model ...")
         config = self.config
 
@@ -197,6 +197,8 @@ class BaseModel(object):
         results.to_csv(config.test_result_file)
         print("Testing complete.")
 
+
+
     def beam_search(self, sess, image_files, vocabulary):
         """Use beam search to generate the captions for a batch of images."""
         # Feed in the images to get the contexts and the initial LSTM states
@@ -273,8 +275,9 @@ class BaseModel(object):
             if complete_caption_data[k].size() == 0:
                 complete_caption_data[k] = partial_caption_data[k]
             results.append(complete_caption_data[k].extract(sort=True))
-
         return results
+
+
 
     def save(self):
         """ Save the model. """
@@ -289,7 +292,7 @@ class BaseModel(object):
         config_.global_step = self.global_step.eval()
         pickle.dump(config_, info_file)
         info_file.close()
-        print("Model saved.")
+        print("Model saved......")
 
 
 
