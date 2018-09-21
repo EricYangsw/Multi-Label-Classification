@@ -8,6 +8,7 @@ import pickle
 import copy
 import json
 from utils.nn import NN
+from dataset import DataSet
 
 # self-definded package & modules 
 # from utils.coco.coco import COCO
@@ -77,7 +78,7 @@ class BaseModel(object):
 
 
 
-    def train(self, sess, train_data):
+    def train(self, sess):
         print("Training the model.........")
         config = self.config
 
@@ -85,15 +86,16 @@ class BaseModel(object):
             os.mkdir(config.summary_dir)
         train_writer = tf.summary.FileWriter(config.summary_dir,
                                              sess.graph)
-
+        print("Training data generator...... ")
+        make_data = DataSet(config)
+        train_data = make_data.train_data()
         for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
-            for _ in tqdm(list(range(train_data.num_batches)), desc='batch'):
-                batch = train_data.next_batch() 
-                images, sentences, masks = batch
+            for _ in tqdm(list(range(make_data.num_batches)), desc='batch'):
+                batch = train_data.__next__()
+                images, label = batch
                 # images = self.image_loader.load_images(image_files)
                 feed_dict = {self.images: images,
-                             self.sentences: sentences,
-                             self.masks: masks} # what masks can ????
+                             self.sentences: label}
                 _, summary, global_step = sess.run([self.opt_op, #in model.build_optimizer()
                                                     self.summary,#in model.build_summary()
                                                     self.global_step],
@@ -101,7 +103,6 @@ class BaseModel(object):
                 if (global_step + 1) % config.save_period == 0:
                     self.save()
                 train_writer.add_summary(summary, global_step)
-            train_data.reset() # reset() ???
         self.save()
         train_writer.close()
         print("Training complete.....")

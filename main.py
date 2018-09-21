@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from config import Config
 from model import Multi_Label_Class
-from dataset import train_data, eval_data, test_data
+from dataset import DataSet
 
 FLAGS = tf.app.flags.FLAGS # transfer parameters of "tf.app.run( )" needed
 
@@ -35,7 +35,6 @@ def main(argv):
     with tf.Session() as sess:
         if FLAGS.phase == 'train':
             # training phase
-            data = train_data(config) # Read data
             model = Multi_Label_Class(config) # Already building model?
             sess.run(tf.global_variables_initializer())
             #if FLAGS.load:
@@ -43,14 +42,13 @@ def main(argv):
             #if FLAGS.load_cnn:
             #    model.load_cnn(sess, FLAGS.cnn_model_file)
             
-            tf.get_default_graph().finalize() 
-            # Returns the default graph for the current thread.
-            model.train(sess, data) # Training model
+            tf.get_default_graph().finalize() # Returns the default graph for the current thread.
+            model.train(sess) # Training model
             
 
         elif FLAGS.phase == 'eval':
             # evaluation phase
-            coco, data, vocabulary = eval_data(config)
+            coco, data, vocabulary =  DataSet.eval_data(config)
             model = Multi_Label_Class(config)
             model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()
@@ -58,7 +56,7 @@ def main(argv):
 
         else:
             # testing phase
-            data, vocabulary = test_data(config)
+            data, vocabulary =  DataSet.test_data(config)
             model = Multi_Label_Class(config)
             model.load(sess, FLAGS.model_file)
             tf.get_default_graph().finalize()

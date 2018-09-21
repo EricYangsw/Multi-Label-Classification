@@ -206,13 +206,13 @@ class Multi_Label_Class(BaseModel):
 
         # Setup the placeholders
         if self.is_train:
-            contexts = self.conv_feats # input come from CNN
-            sentences = tf.placeholder( #??????
+            contexts = self.conv_feats # come from CNN output
+            labels = tf.placeholder( #??????
                 dtype = tf.int32,
-                shape = [config.batch_size, config.max_caption_length])
-            masks = tf.placeholder(  #??????
-                dtype = tf.float32,
-                shape = [config.batch_size, config.max_caption_length])
+                shape = [config.batch_size, 1, config.label_dim])
+            #masks = tf.placeholder(  #??????
+            #    dtype = tf.float32,
+            #    shape = [config.batch_size, config.max_caption_length])
         else:
             contexts = tf.placeholder(
                 dtype = tf.float32,
@@ -228,24 +228,24 @@ class Multi_Label_Class(BaseModel):
                 shape = [config.batch_size])
 
         # Setup the word embedding
-        with tf.variable_scope("word_embedding"):
-            embedding_matrix = tf.get_variable(
-                name = 'weights',
-                shape = [config.vocabulary_size, config.dim_embedding],
-                initializer = self.nn.fc_kernel_initializer,
-                regularizer = self.nn.fc_kernel_regularizer,
-                trainable = self.is_train)
+        #with tf.variable_scope("word_embedding"):
+        #    embedding_matrix = tf.get_variable(
+        #        name = 'weights',
+        #        shape = [config.vocabulary_size, config.dim_embedding],
+        #        initializer = self.nn.fc_kernel_initializer,
+        #        regularizer = self.nn.fc_kernel_regularizer,
+        #        trainable = self.is_train)
 
         # Setup the LSTM
         lstm = tf.nn.rnn_cell.LSTMCell(
-                  config.num_lstm_units,
-                  initializer = self.nn.fc_kernel_initializer)
+                     config.num_lstm_units,
+                     initializer = self.nn.fc_kernel_initializer)
         if self.is_train:
             lstm = tf.nn.rnn_cell.DropoutWrapper(
-                lstm,
-                input_keep_prob = 1.0-config.lstm_drop_rate,
-                output_keep_prob = 1.0-config.lstm_drop_rate,
-                state_keep_prob = 1.0-config.lstm_drop_rate)
+                      lstm,
+                      input_keep_prob = 1.0-config.lstm_drop_rate,
+                      output_keep_prob = 1.0-config.lstm_drop_rate,
+                      state_keep_prob = 1.0-config.lstm_drop_rate)
 
         # Initialize the LSTM using the mean context
         with tf.variable_scope("initialize"):
@@ -254,13 +254,13 @@ class Multi_Label_Class(BaseModel):
             initial_state = initial_memory, initial_output
 
 
-        # Prepare to run
+        # Prepare to run model-------------
         predictions = []
         if self.is_train:
             alphas = []
             cross_entropies = []
             predictions_correct = []
-            num_steps = config.max_caption_length
+            num_steps = config.max_class_label_length
             last_output = initial_output 
             last_memory = initial_memory 
             last_word = tf.zeros([config.batch_size], tf.int32)
@@ -269,26 +269,34 @@ class Multi_Label_Class(BaseModel):
         last_state = last_memory, last_output
 
 
-        # Generate the outputs class one by one
+
+        # Generate the outputs class one by one -------------
         for idx in range(num_steps):
             # Attention mechanism
             with tf.variable_scope("attend"):
                 alpha = self.attend(contexts, last_output) # (contexts,each_step_output)
                 context = tf.reduce_sum(contexts*tf.expand_dims(alpha, 2),
                                         axis = 1)
-                if self.is_train:
-                    tiled_masks = tf.tile(tf.expand_dims(masks[:, idx], 1),
-                                             [1, self.num_ctx])
-                    masked_alpha = alpha * tiled_masks
-                    alphas.append(tf.reshape(masked_alpha, [-1]))
+                #if self.is_train:
+                    #tiled_masks = tf.tile(tf.expand_dims(masks[:, idx], 1),
+                    #                         [1, self.num_ctx])
+                    #masked_alpha = alpha * tiled_masks # masked to hide unknow output 
+                    #alphas.append(tf.reshape(masked_alpha, [-1]))
+                alphas.append(tf.reshape(alpha, [-1]))
 
             # Embed the last word
-            with tf.variable_scope("word_embedding"):
-                word_embed = tf.nn.embedding_lookup(embedding_matrix,
-                                                    last_word)
+            #with tf.variable_scope("word_embedding"):
+            #    word_embed = tf.nn.embedding_lookup(embedding_matrix,
+            #                                        last_word)
            # Apply the LSTM
             with tf.variable_scope("lstm"):
-                current_input = tf.concat([context, word_embed], 1)
+
+                # Need more input
+                current_input = tf.concat([context,  #attention input 
+                                           last_word], 1)  # lstm output
+                                           # Heard y label
+                                           # sigmoid output
+
                 output, state = lstm(current_input, last_state)
                 memory, _ = state
 
@@ -298,19 +306,21 @@ class Multi_Label_Class(BaseModel):
                                              context,
                                              word_embed],
                                              axis = 1)
-                logits = self.decode(expanded_output)
-                probs = tf.nn.softmax(logits)
+                # decode                              
+                logits = self.decode(expanded_output) 
+                probs = tf.nn.sigmoid(logits)
                 prediction = tf.argmax(logits, 1)
                 predictions.append(prediction)
 
 
             # Compute the loss for this step, if necessary
             if self.is_train:
-                cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
+                cross_entropy = tf.nn.sparse_sigmoid_cross_entropy_with_logits(
                     labels = sentences[:, idx],
                     logits = logits)
-                masked_cross_entropy = cross_entropy * masks[:, idx]
-                cross_entropies.append(masked_cross_entropy)
+                #masked_cross_entropy = cross_entropy * masks[:, idx]
+                cross_entropies.append(cross_entropy)
+
 
                 ground_truth = tf.cast(sentences[:, idx], tf.int64)
                 prediction_correct = tf.where(
@@ -319,10 +329,12 @@ class Multi_Label_Class(BaseModel):
                     tf.cast(tf.zeros_like(prediction), tf.float32))
                 predictions_correct.append(prediction_correct)
 
+                # prepare to next step
                 last_output = output
                 last_memory = memory
                 last_state = state
                 last_word = sentences[:, idx]
+                
 
             tf.get_variable_scope().reuse_variables()
             # End: for loop
@@ -414,7 +426,7 @@ class Multi_Label_Class(BaseModel):
 
 
     def attend(self, contexts, output):
-        """ Attention Mechanism. """
+        """ Attention Mechanism....."""
         config = self.config
         reshaped_contexts = tf.reshape(contexts, [-1, self.dim_ctx])
         reshaped_contexts = self.nn.dropout(reshaped_contexts)
@@ -459,7 +471,7 @@ class Multi_Label_Class(BaseModel):
 
 
     def decode(self, expanded_output):
-        """ Decode the expanded output of the LSTM into a word. """
+        """ Decode the expanded output of the LSTM into a word...."""
         config = self.config
         expanded_output = self.nn.dropout(expanded_output)
         if config.num_decode_layers == 1:
@@ -480,6 +492,7 @@ class Multi_Label_Class(BaseModel):
                                    activation = None,
                                    name = 'fc_2')
         return logits
+
 
 
 

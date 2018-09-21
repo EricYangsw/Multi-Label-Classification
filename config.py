@@ -3,8 +3,9 @@ class Config(object):
     def __init__(self):
         # about the model architecture
         self.cnn = 'vgg16'               # 'vgg16' or 'resnet50'
-        self.max_caption_length = 20
-        self.dim_embedding = 512 #check what embedding for??????? 
+        self..max_class_label_length = 20 # the number of "1" label in each data
+        ## self.label_dim = 100 
+        #self.dim_embedding = 512 #check what embedding for??????? 
         self.num_lstm_units = 512
         self.num_initalize_layers = 2    # 1 or 2
         self.dim_initalize_layer = 512
@@ -52,7 +53,7 @@ class Config(object):
         self.X_train_data = './train_data'
         self.Y_train_data = './train_data'
 
-        self.data_step = 10
+        self.time_step = 10
         #self.train_caption_file = './train/captions_train2014.json'
         #self.temp_annotation_file = './train/anns.csv'
         self.temp_data_file = './train/data.npy'
