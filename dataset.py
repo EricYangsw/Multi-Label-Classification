@@ -5,7 +5,7 @@ import pandas as pd
 import tensorflow as tf
 from config import Config
 from tqdm import tqdm
-
+       
 
 class DataSet(object):
     def __init__(self, config):
@@ -34,7 +34,7 @@ class DataSet(object):
 
             for i in range(self.config.time_step, data_count):
                 X_batch[batch, :, :, 0] = X_chunk[i-self.config.time_step:i, :]
-                Y_batch[batch, 1, :] = Y_chunk[i, :]
+                Y_batch[batch, :] = Y_chunk[i, :]
                 batch += 1
                 if batch == self.config.batch_size:
                     batch = 0

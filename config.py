@@ -3,7 +3,7 @@ class Config(object):
     def __init__(self):
         # about the model architecture
         self.cnn = 'vgg16'               # 'vgg16' or 'resnet50'
-        self..max_class_label_length = 20 # the number of "1" label in each data
+        self.max_class_label_length = 20 # the number of "1" label in each data
         ## self.label_dim = 100 
         #self.dim_embedding = 512 #check what embedding for??????? 
         self.num_lstm_units = 512
@@ -27,6 +27,7 @@ class Config(object):
         # about the optimization
         self.num_epochs = 100
         self.batch_size = 32
+        self.label_index_length=4000
         self.optimizer = 'Adam'    # 'Adam', 'RMSProp', 'Momentum' or 'SGD'
         self.initial_learning_rate = 0.0001
         self.learning_rate_decay_factor = 1.0
@@ -69,3 +70,4 @@ class Config(object):
         self.test_image_dir = './test/images/'
         self.test_result_dir = './test/results/'
         self.test_result_file = './test/results.csv'
+     

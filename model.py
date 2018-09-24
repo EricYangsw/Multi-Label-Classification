@@ -2,28 +2,24 @@ import tensorflow as tf
 import numpy as np
 from base_model import BaseModel
 
-'''
-.Training flow:  load(), load_cnn(), train()
-.Eval flow: load(), eval()
-.Test flow: load(), test()
-'''
 
 class Multi_Label_Class(BaseModel):
     def build(self):
-        """ Build the model...... """
+        """ Build all tensorflow model by called eachmethod...... """
         self.build_cnn()
         self.build_rnn()
         if self.is_train:
             self.build_optimizer()
             self.build_summary()
 
+
     def build_cnn(self):
-        print("Building the CNN......")
-        if self.config.cnn == 'vgg16':
-            self.build_vgg16()
-        else:
-            self.build_resnet50()
-        print("{} built......".format(self.config.cnn))
+        print("Building CNN model (vgg16)..........")
+        #if self.config.cnn == 'vgg16':
+        self.build_vgg16()
+        #else:
+            #self.build_resnet50()
+        #print("{} built......".format(self.config.cnn))
         
 
 
@@ -60,16 +56,15 @@ class Multi_Label_Class(BaseModel):
         conv5_3_feats = self.nn.conv2d(conv5_2_feats, 512, name = 'conv5_3')
         reshaped_conv5_3_feats = tf.reshape(conv5_3_feats,
                                             [config.batch_size, 196, 512])
-
         self.conv_feats = reshaped_conv5_3_feats # CNN output (into RNN)
         self.num_ctx = 196
         self.dim_ctx = 512
         self.images = images
 
 
-
+    """ 
     def build_resnet50(self):
-        """ Build the ResNet50. """
+        """' Build the ResNet50........ '"""
         config = self.config
         
         #inputs
@@ -118,7 +113,7 @@ class Multi_Label_Class(BaseModel):
         self.images = images
 
     def resnet_block(self, inputs, name1, name2, c, s=2):
-        """ A basic block of ResNet..... """
+        """ 'A basic block of ResNet..... '"""
         branch1_feats = self.nn.conv2d(inputs,
                                     filters = 4*c,
                                     kernel_size = (1, 1),
@@ -161,7 +156,7 @@ class Multi_Label_Class(BaseModel):
         return outputs
 
     def resnet_block2(self, inputs, name1, name2, c):
-        """ Another basic block of ResNet. """
+        """' Another basic block of ResNet. '"""
         branch2a_feats = self.nn.conv2d(inputs,
                                      filters = c,
                                      kernel_size = (1, 1),
@@ -195,24 +190,22 @@ class Multi_Label_Class(BaseModel):
         outputs = tf.nn.relu(outputs)
         return outputs
 
+    """
 
 
 #============================================
 # Building Rnn Model
     def build_rnn(self):
-        """ Build the RNN......... """
-        print("Building the RNN Model......")
+        """ Build the RNN................... """
+        print("Building the RNN Model..........")
         config = self.config
 
         # Setup the placeholders
         if self.is_train:
             contexts = self.conv_feats # come from CNN output
-            labels = tf.placeholder( #??????
+            self.labels = tf.placeholder(
                 dtype = tf.int32,
                 shape = [config.batch_size, 1, config.label_dim])
-            #masks = tf.placeholder(  #??????
-            #    dtype = tf.float32,
-            #    shape = [config.batch_size, config.max_caption_length])
         else:
             contexts = tf.placeholder(
                 dtype = tf.float32,
@@ -227,16 +220,8 @@ class Multi_Label_Class(BaseModel):
                 dtype = tf.int32,
                 shape = [config.batch_size])
 
-        # Setup the word embedding
-        #with tf.variable_scope("word_embedding"):
-        #    embedding_matrix = tf.get_variable(
-        #        name = 'weights',
-        #        shape = [config.vocabulary_size, config.dim_embedding],
-        #        initializer = self.nn.fc_kernel_initializer,
-        #        regularizer = self.nn.fc_kernel_regularizer,
-        #        trainable = self.is_train)
 
-        # Setup the LSTM
+        """Building LSTM cell with Dropout.........."""
         lstm = tf.nn.rnn_cell.LSTMCell(
                      config.num_lstm_units,
                      initializer = self.nn.fc_kernel_initializer)
@@ -247,85 +232,98 @@ class Multi_Label_Class(BaseModel):
                       output_keep_prob = 1.0-config.lstm_drop_rate,
                       state_keep_prob = 1.0-config.lstm_drop_rate)
 
-        # Initialize the LSTM using the mean context
+        """Initialize the LSTM using the mean context"""
         with tf.variable_scope("initialize"):
             context_mean = tf.reduce_mean(self.conv_feats, axis = 1) # take mean of CNN output
-            initial_memory, initial_output = self.initialize(context_mean)
+            initial_memory, initial_output = self.initialize(context_mean) #Call initialize()
             initial_state = initial_memory, initial_output
 
 
-        # Prepare to run model-------------
+
+
+        # Prepare to run model...........................
         predictions = []
         if self.is_train:
-            alphas = []
+            alphas = [] # Parameters in attention operation
             cross_entropies = []
             predictions_correct = []
             num_steps = config.max_class_label_length
-            last_output = initial_output 
-            last_memory = initial_memory 
-            last_word = tf.zeros([config.batch_size], tf.int32)
+            last_output = initial_output # h after initialized 
+            last_memory = initial_memory # C after initialized
+            last_word = tf.zeros([config.batch_size], tf.int32) #???/
         else:
             num_steps = 1
         last_state = last_memory, last_output
+        label_pool = tf.constant(
+                                [0 for _ in range(config.label_index_length)]
+                                )
 
 
 
-        # Generate the outputs class one by one -------------
+
+         
+        """for loop start:
+        LSTM predict time step: max_class_label_length"""
         for idx in range(num_steps):
             # Attention mechanism
             with tf.variable_scope("attend"):
-                alpha = self.attend(contexts, last_output) # (contexts,each_step_output)
+                alpha = self.attend(contexts, last_output) # After Softmax
+                # contexts: cnn output, last_output: lstm output
                 context = tf.reduce_sum(contexts*tf.expand_dims(alpha, 2),
                                         axis = 1)
-                #if self.is_train:
-                    #tiled_masks = tf.tile(tf.expand_dims(masks[:, idx], 1),
-                    #                         [1, self.num_ctx])
-                    #masked_alpha = alpha * tiled_masks # masked to hide unknow output 
-                    #alphas.append(tf.reshape(masked_alpha, [-1]))
-                alphas.append(tf.reshape(alpha, [-1]))
+                # tf.expend_dim(): Inserts a dim of 1 into tensor
+                if self.is_train:
+                    alphas.append(tf.reshape(alpha, [-1]))
 
-            # Embed the last word
-            #with tf.variable_scope("word_embedding"):
-            #    word_embed = tf.nn.embedding_lookup(embedding_matrix,
-            #                                        last_word)
+
+
+            """ Modigy this area:
+                1. Label pool for picking unrepeat label
+                2. More input in each step of lstm
+                3. Atten by converlution layer output
+            """
            # Apply the LSTM
             with tf.variable_scope("lstm"):
-
-                # Need more input
                 current_input = tf.concat([context,  #attention input 
-                                           last_word], 1)  # lstm output
+                                           last_word,
+                                           hard_label, 
+                                           ], 1)  # lstm output
                                            # Heard y label
                                            # sigmoid output
-
                 output, state = lstm(current_input, last_state)
                 memory, _ = state
 
             # Decode the expanded output of LSTM into a word
             with tf.variable_scope("decode"):
                 expanded_output = tf.concat([output,
-                                             context,
-                                             word_embed],
+                                             context],
                                              axis = 1)
-                # decode                              
+                """decode(): Last nn layers for predict"""                              
                 logits = self.decode(expanded_output) 
-                probs = tf.nn.sigmoid(logits)
+                probs = tf.nn.sigmoid(logits)     # Become next input
+
+                """Need label pool here:"""
                 prediction = tf.argmax(logits, 1)
+                label_pool = tf.identity()
+
+                hard_label = tf.identity(hard_label + tf.one_hot(prediction, depth=config.label_index_length)
+
+
+                
                 predictions.append(prediction)
 
 
             # Compute the loss for this step, if necessary
             if self.is_train:
-                cross_entropy = tf.nn.sparse_sigmoid_cross_entropy_with_logits(
-                    labels = sentences[:, idx],
+                cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
+                    labels = self.labels[:, idx], # make sure the dim.
                     logits = logits)
-                #masked_cross_entropy = cross_entropy * masks[:, idx]
                 cross_entropies.append(cross_entropy)
 
 
-                ground_truth = tf.cast(sentences[:, idx], tf.int64)
+                ground_truth = tf.cast(self.labels[:, idx], tf.int64)
                 prediction_correct = tf.where(
                     tf.equal(prediction, ground_truth),
-                    tf.cast(masks[:, idx], tf.float32),
                     tf.cast(tf.zeros_like(prediction), tf.float32))
                 predictions_correct.append(prediction_correct)
 
@@ -333,11 +331,10 @@ class Multi_Label_Class(BaseModel):
                 last_output = output
                 last_memory = memory
                 last_state = state
-                last_word = sentences[:, idx]
+                last_word = self.labels[:, idx]
                 
-
             tf.get_variable_scope().reuse_variables()
-            # End: for loop
+            """End: for loop"""
 
 
         # Compute the final loss, if necessary
@@ -362,6 +359,8 @@ class Multi_Label_Class(BaseModel):
             accuracy = tf.reduce_sum(predictions_correct) \
                        / tf.reduce_sum(masks)
 
+
+
         self.contexts = contexts
         if self.is_train:
             self.sentences = sentences
@@ -381,8 +380,7 @@ class Multi_Label_Class(BaseModel):
             self.memory = memory
             self.output = output
             self.probs = probs
-
-        print("RNN built.")
+        print("RNN built..............")
         # End: build_rnn()
 
 
@@ -423,6 +421,10 @@ class Multi_Label_Class(BaseModel):
                                    activation = None,
                                    name = 'fc_b2')
         return memory, output
+
+
+
+
 
 
     def attend(self, contexts, output):

@@ -1,20 +1,21 @@
 import os
+import pickle
+import copy
+import json
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import pickle
-import copy
-import json
-from utils.nn import NN
+
+from nn import NN
 from dataset import DataSet
 
 # self-definded package & modules 
 # from utils.coco.coco import COCO
 # from utils.coco.pycocoevalcap.eval import COCOEvalCap
 # from utils.misc import ImageLoader, CaptionData, TopN
-
+ 
 
 class BaseModel(object):
     def __init__(self, config):
@@ -27,19 +28,21 @@ class BaseModel(object):
                                        name = 'global_step',
                                        trainable = False)
         #self.image_loader = ImageLoader('./utils/ilsvrc_2012_mean.npy')
+        self.build() #Run building method
 
-        self.build()
     def build(self):
+        """Prepare to be overrided in child class"""
         raise NotImplementedError()
 
 
     def load(self, sess, model_file=None):
-        """ Load the model......"""
+        """ Load the model........."""
         config = self.config
+        
+        """Make save_path"""
         if model_file is not None:
             save_path = model_file
         else:
-            '''if model_file is None......'''
             info_path = os.path.join(config.save_dir, "config.pickle")
             info_file = open(info_path, "rb")
             config = pickle.load(info_file)
@@ -47,17 +50,18 @@ class BaseModel(object):
             info_file.close()
             save_path = os.path.join(config.save_dir,
                                      str(global_step)+".npy")
-
+        """Load model by np.load()"""
         print("Loading the model from %s..." %save_path)
         data_dict = np.load(save_path).item() 
         #"np.load": Load arrays or pickled objects from .npy, .npz or pickled files.
-
         count = 0
         for v in tqdm(tf.global_variables()):
             if v.name in data_dict.keys():
                 sess.run(v.assign(data_dict[v.name]))
                 count += 1
         print("%d tensors loaded....." %count)
+
+
 
 
     def load_cnn(self, session, data_path, ignore_missing=True):
@@ -78,6 +82,8 @@ class BaseModel(object):
 
 
 
+
+
     def train(self, sess):
         print("Training the model.........")
         config = self.config
@@ -92,10 +98,10 @@ class BaseModel(object):
         for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
             for _ in tqdm(list(range(make_data.num_batches)), desc='batch'):
                 batch = train_data.__next__()
-                images, label = batch
+                images, labels = batch
                 # images = self.image_loader.load_images(image_files)
                 feed_dict = {self.images: images,
-                             self.sentences: label}
+                             self.labels: labels}
                 _, summary, global_step = sess.run([self.opt_op, #in model.build_optimizer()
                                                     self.summary,#in model.build_summary()
                                                     self.global_step],
@@ -106,6 +112,8 @@ class BaseModel(object):
         self.save()
         train_writer.close()
         print("Training complete.....")
+
+        
 
 
 

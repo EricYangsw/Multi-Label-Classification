@@ -24,7 +24,7 @@ tf.flags.DEFINE_boolean('train_cnn', False,
 tf.flags.DEFINE_integer('beam_size', 3,
                         'The size of beam search for caption generation')
 
-
+        
 def main(argv):
     config = Config()
     config.phase = FLAGS.phase
