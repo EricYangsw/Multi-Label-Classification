@@ -205,7 +205,7 @@ class Multi_Label_Class(BaseModel):
             contexts = self.conv_feats # come from CNN output
             self.labels = tf.placeholder(
                 dtype = tf.int32,
-                shape = [config.batch_size, 1, config.label_dim])
+                shape = [config.batch_size, config.label_dim])
         else:
             contexts = tf.placeholder(
                 dtype = tf.float32,
@@ -241,29 +241,39 @@ class Multi_Label_Class(BaseModel):
 
 
 
-        # Prepare to run model...........................
+        """ Prepare to run model..................."""
         predictions = []
         if self.is_train:
             alphas = [] # Parameters in attention operation
             cross_entropies = []
             predictions_correct = []
             num_steps = config.max_class_label_length
-            last_output = initial_output # h after initialized 
-            last_memory = initial_memory # C after initialized
-            last_word = tf.zeros([config.batch_size], tf.int32) #???/
+
+            """Initializing value (4 LSTM input, 4 decode input)
+               .4 LSTM inputs：attention, 
+                               last output (soft probability), 
+                               hard label, 
+                               last hidden vector (t-1)  
+               .4 decode inputs：attention, 
+                                 last output (soft probability), 
+                                 hard label, 
+                                 hidden vector (t)
+            """
+            attention = contexts # h after initialized 
+            probability = tf.zeros([config.batch_size, config.label_dim], tf.int32)
+            hard_label = tf.zeros([config.batch_size, config.label_index_length], tf.int32)
+            last_memory = initial_memory # C after initialized 
+
         else:
             num_steps = 1
-        last_state = last_memory, last_output
-        label_pool = tf.constant(
-                                [0 for _ in range(config.label_index_length)]
-                                )
+        # last_state = last_memory, last_output
 
 
+        '''initializing variabel for pick label'''
+        pick_hard_label = []
 
-
-         
         """for loop start:
-        LSTM predict time step: max_class_label_length"""
+           LSTM predict time step: max_class_label_length"""
         for idx in range(num_steps):
             # Attention mechanism
             with tf.variable_scope("attend"):
@@ -276,41 +286,42 @@ class Multi_Label_Class(BaseModel):
                     alphas.append(tf.reshape(alpha, [-1]))
 
 
-
-            """ Modigy this area:
-                1. Label pool for picking unrepeat label
-                2. More input in each step of lstm
-                3. Atten by converlution layer output
-            """
-           # Apply the LSTM
+            """Apply the LSTM....."""
             with tf.variable_scope("lstm"):
-                current_input = tf.concat([context,  #attention input 
-                                           last_word,
+                current_input = tf.concat([attention,  #attention input 
+                                           probability,     # last_oupput
                                            hard_label, 
-                                           ], 1)  # lstm output
-                                           # Heard y label
-                                           # sigmoid output
+                                           last_memory], 1)  # last hidden output
+
                 output, state = lstm(current_input, last_state)
                 memory, _ = state
 
-            # Decode the expanded output of LSTM into a word
+
+            """Decode the expanded output of LSTM into a word"""
             with tf.variable_scope("decode"):
-                expanded_output = tf.concat([output,
-                                             context],
+                expanded_output = tf.concat([attention,
+                                             probability,
+                                             hard_label,
+                                             memory],
                                              axis = 1)
                 """decode(): Last nn layers for predict"""                              
                 logits = self.decode(expanded_output) 
                 probs = tf.nn.sigmoid(logits)     # Become next input
 
-                """Need label pool here:"""
-                prediction = tf.argmax(logits, 1)
-                label_pool = tf.identity()
 
-                hard_label = tf.identity(hard_label + tf.one_hot(prediction, depth=config.label_index_length)
+                """Hard lable"""
+                pre_max_label = tf.argmax(probs)
+                if num_steps == 0:
+                    pick_hard_label.append(pre_max_label)
+                else:
+                    
 
 
+
+
+       
                 
-                predictions.append(prediction)
+                #predictions.append(prediction)
 
 
             # Compute the loss for this step, if necessary
@@ -328,10 +339,10 @@ class Multi_Label_Class(BaseModel):
                 predictions_correct.append(prediction_correct)
 
                 # prepare to next step
-                last_output = output
-                last_memory = memory
-                last_state = state
-                last_word = self.labels[:, idx]
+                attention = context # h after initialized 
+                probability = probs
+                hard_label =  
+                last_memory = memory # C after initialized 
                 
             tf.get_variable_scope().reuse_variables()
             """End: for loop"""
@@ -380,7 +391,7 @@ class Multi_Label_Class(BaseModel):
             self.memory = memory
             self.output = output
             self.probs = probs
-        print("RNN built..............")
+        print("RNN built...........................")
         # End: build_rnn()
 
 
@@ -494,6 +505,37 @@ class Multi_Label_Class(BaseModel):
                                    activation = None,
                                    name = 'fc_2')
         return logits
+
+
+
+
+     def pick_hard_label(self, hard_label, probability):
+        def f1(pp):
+            return pp
+
+        def f2(prop, x): 
+            prop = tf.subtract(prop, tf.reduce_sum(tf.one_hot(x, depth=20, dtype=tf.float64), 0))#
+            pp = tf.argmax(prop, output_type=tf.int32)
+            return pp
+
+        pick = []
+        prop = tf.constant(np.random.uniform(0., 1., 20))
+        gg = tf.argmax(prop, output_type=tf.int32)
+        pick.append(gg)
+
+        for _ in range(20):
+            prop = tf.constant(np.random.uniform(0., 1., 20))
+            gg = tf.argmax(prop, output_type=tf.int32)
+            x = tf.stack(pick)
+            aa = tf.where(tf.equal(gg, x))
+            pp = tf.cond( tf.equal(tf.shape(aa)[0], 0), 
+                                true_fn=lambda: f1(gg), # True
+                                false_fn=lambda: f2(prop, x)) # False
+            pick.append(pp)
+            pred = tf.one_hot(pp, depth=20, dtype=tf.int32)
+            hard_label = tf.add(lable_pool, pred)
+        return hard_label
+
 
 
 

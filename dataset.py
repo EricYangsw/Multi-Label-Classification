@@ -6,7 +6,7 @@ import tensorflow as tf
 from config import Config
 from tqdm import tqdm
        
-
+  
 class DataSet(object):
     def __init__(self, config):
         self.config = config
@@ -26,7 +26,6 @@ class DataSet(object):
                                 fearute_size,
                                 1,))
             Y_batch =  np.zeros((self.config.batch_size,
-                                 1,
                                  fearute_size))
 
             data_count = X_batch.shape[0]
