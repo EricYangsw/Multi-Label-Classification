@@ -6,33 +6,23 @@ from base_model import BaseModel
 class Multi_Label_Class(BaseModel):
     def build(self):
         """ Build all tensorflow model by called eachmethod...... """
-        self.build_cnn()
+        self.build_vgg16()
         self.build_rnn()
         if self.is_train:
             self.build_optimizer()
             self.build_summary()
 
 
-    def build_cnn(self):
-        print("Building CNN model (vgg16)..........")
-        #if self.config.cnn == 'vgg16':
-        self.build_vgg16()
-        #else:
-            #self.build_resnet50()
-        #print("{} built......".format(self.config.cnn))
-        
-
-
     def build_vgg16(self):
         """ Build the VGG16 net. """
+        print("Building CNN model (vgg16)..........")
         config = self.config
 
         # Input 
         images = tf.placeholder(
                     dtype = tf.float32,
-                    shape = [config.batch_size] + self.image_shape)
+                    shape = [config.batch_size] + self.image_shape) #image_shape in base_model.py
 
-        #self.nn.conv2d(inputs, filters)
         conv1_1_feats = self.nn.conv2d(images, 64, name = 'conv1_1') 
         conv1_2_feats = self.nn.conv2d(conv1_1_feats, 64, name = 'conv1_2')
         pool1_feats = self.nn.max_pool2d(conv1_2_feats, name = 'pool1')
@@ -57,144 +47,15 @@ class Multi_Label_Class(BaseModel):
         reshaped_conv5_3_feats = tf.reshape(conv5_3_feats,
                                             [config.batch_size, 196, 512])
         self.conv_feats = reshaped_conv5_3_feats # CNN output (into RNN)
+
         self.num_ctx = 196
         self.dim_ctx = 512
-        self.images = images
+        self.images = images #?
 
 
-    """ 
-    def build_resnet50(self):
-        """' Build the ResNet50........ '"""
-        config = self.config
-        
-        #inputs
-        images = tf.placeholder(
-                    dtype = tf.float32,
-                    shape = [config.batch_size] + self.image_shape)
-
-        conv1_feats = self.nn.conv2d(images,
-                                  filters = 64,
-                                  kernel_size = (7, 7),
-                                  strides = (2, 2),
-                                  activation = None,
-                                  name = 'conv1')
-        conv1_feats = self.nn.batch_norm(conv1_feats, 'bn_conv1')
-        conv1_feats = tf.nn.relu(conv1_feats)
-        pool1_feats = self.nn.max_pool2d(conv1_feats,
-                                      pool_size = (3, 3),
-                                      strides = (2, 2),
-                                      name = 'pool1')
-
-        res2a_feats = self.resnet_block(pool1_feats, 'res2a', 'bn2a', 64, 1)
-        res2b_feats = self.resnet_block2(res2a_feats, 'res2b', 'bn2b', 64)
-        res2c_feats = self.resnet_block2(res2b_feats, 'res2c', 'bn2c', 64)
-
-        res3a_feats = self.resnet_block(res2c_feats, 'res3a', 'bn3a', 128)
-        res3b_feats = self.resnet_block2(res3a_feats, 'res3b', 'bn3b', 128)
-        res3c_feats = self.resnet_block2(res3b_feats, 'res3c', 'bn3c', 128)
-        res3d_feats = self.resnet_block2(res3c_feats, 'res3d', 'bn3d', 128)
-
-        res4a_feats = self.resnet_block(res3d_feats, 'res4a', 'bn4a', 256)
-        res4b_feats = self.resnet_block2(res4a_feats, 'res4b', 'bn4b', 256)
-        res4c_feats = self.resnet_block2(res4b_feats, 'res4c', 'bn4c', 256)
-        res4d_feats = self.resnet_block2(res4c_feats, 'res4d', 'bn4d', 256)
-        res4e_feats = self.resnet_block2(res4d_feats, 'res4e', 'bn4e', 256)
-        res4f_feats = self.resnet_block2(res4e_feats, 'res4f', 'bn4f', 256)
-
-        res5a_feats = self.resnet_block(res4f_feats, 'res5a', 'bn5a', 512)
-        res5b_feats = self.resnet_block2(res5a_feats, 'res5b', 'bn5b', 512)
-        res5c_feats = self.resnet_block2(res5b_feats, 'res5c', 'bn5c', 512)
-
-        reshaped_res5c_feats = tf.reshape(res5c_feats,
-                                         [config.batch_size, 49, 2048])
-        self.conv_feats = reshaped_res5c_feats # CNN output (into RNN)
-        self.num_ctx = 49
-        self.dim_ctx = 2048
-        self.images = images
-
-    def resnet_block(self, inputs, name1, name2, c, s=2):
-        """ 'A basic block of ResNet..... '"""
-        branch1_feats = self.nn.conv2d(inputs,
-                                    filters = 4*c,
-                                    kernel_size = (1, 1),
-                                    strides = (s, s),
-                                    activation = None,
-                                    use_bias = False,
-                                    name = name1+'_branch1')
-        branch1_feats = self.nn.batch_norm(branch1_feats, name2+'_branch1')
-
-        branch2a_feats = self.nn.conv2d(inputs,
-                                     filters = c,
-                                     kernel_size = (1, 1),
-                                     strides = (s, s),
-                                     activation = None,
-                                     use_bias = False,
-                                     name = name1+'_branch2a')
-        branch2a_feats = self.nn.batch_norm(branch2a_feats, name2+'_branch2a')
-        branch2a_feats = tf.nn.relu(branch2a_feats)
-
-        branch2b_feats = self.nn.conv2d(branch2a_feats,
-                                     filters = c,
-                                     kernel_size = (3, 3),
-                                     strides = (1, 1),
-                                     activation = None,
-                                     use_bias = False,
-                                     name = name1+'_branch2b')
-        branch2b_feats = self.nn.batch_norm(branch2b_feats, name2+'_branch2b')
-        branch2b_feats = tf.nn.relu(branch2b_feats)
-
-        branch2c_feats = self.nn.conv2d(branch2b_feats,
-                                     filters = 4*c,
-                                     kernel_size = (1, 1),
-                                     strides = (1, 1),
-                                     activation = None,
-                                     use_bias = False,
-                                     name = name1+'_branch2c')
-        branch2c_feats = self.nn.batch_norm(branch2c_feats, name2+'_branch2c')
-        outputs = branch1_feats + branch2c_feats # add x
-        outputs = tf.nn.relu(outputs)
-        return outputs
-
-    def resnet_block2(self, inputs, name1, name2, c):
-        """' Another basic block of ResNet. '"""
-        branch2a_feats = self.nn.conv2d(inputs,
-                                     filters = c,
-                                     kernel_size = (1, 1),
-                                     strides = (1, 1),
-                                     activation = None,
-                                     use_bias = False,
-                                     name = name1+'_branch2a')
-        branch2a_feats = self.nn.batch_norm(branch2a_feats, name2+'_branch2a')
-        branch2a_feats = tf.nn.relu(branch2a_feats)
-
-        branch2b_feats = self.nn.conv2d(branch2a_feats,
-                                     filters = c,
-                                     kernel_size = (3, 3),
-                                     strides = (1, 1),
-                                     activation = None,
-                                     use_bias = False,
-                                     name = name1+'_branch2b')
-        branch2b_feats = self.nn.batch_norm(branch2b_feats, name2+'_branch2b')
-        branch2b_feats = tf.nn.relu(branch2b_feats)
-
-        branch2c_feats = self.nn.conv2d(branch2b_feats,
-                                     filters = 4*c,
-                                     kernel_size = (1, 1),
-                                     strides = (1, 1),
-                                     activation = None,
-                                     use_bias = False,
-                                     name = name1+'_branch2c')
-        branch2c_feats = self.nn.batch_norm(branch2c_feats, name2+'_branch2c')
-
-        outputs = inputs + branch2c_feats # add input
-        outputs = tf.nn.relu(outputs)
-        return outputs
-
-    """
 
 
-#============================================
-# Building Rnn Model
+#======================================================
     def build_rnn(self):
         """ Build the RNN................... """
         print("Building the RNN Model..........")
@@ -205,7 +66,7 @@ class Multi_Label_Class(BaseModel):
             contexts = self.conv_feats # come from CNN output
             self.labels = tf.placeholder(
                 dtype = tf.int32,
-                shape = [config.batch_size, config.label_dim])
+                shape = [config.batch_size, 1, config.label_dim])
         else:
             contexts = tf.placeholder(
                 dtype = tf.float32,
@@ -216,9 +77,10 @@ class Multi_Label_Class(BaseModel):
             last_output = tf.placeholder(
                 dtype = tf.float32,
                 shape = [config.batch_size, config.num_lstm_units])
-            last_word = tf.placeholder(
+            last_word = tf.placeholder( #?????
                 dtype = tf.int32,
                 shape = [config.batch_size])
+
 
 
         """Building LSTM cell with Dropout.........."""
@@ -232,155 +94,157 @@ class Multi_Label_Class(BaseModel):
                       output_keep_prob = 1.0-config.lstm_drop_rate,
                       state_keep_prob = 1.0-config.lstm_drop_rate)
 
-        """Initialize the LSTM using the mean context"""
+
+
+        """Initializing input data using the mean context"""
         with tf.variable_scope("initialize"):
             context_mean = tf.reduce_mean(self.conv_feats, axis = 1) # take mean of CNN output
             initial_memory, initial_output = self.initialize(context_mean) #Call initialize()
-            initial_state = initial_memory, initial_output
-
-
+            #initial_state = initial_memory, initial_output
 
 
         """ Prepare to run model..................."""
-        predictions = []
+        #predictions = []
+        step_max_list = []
+        
         if self.is_train:
             alphas = [] # Parameters in attention operation
             cross_entropies = []
-            predictions_correct = []
+            #predictions_correct = []
             num_steps = config.max_class_label_length
 
-            """Initializing value (4 LSTM input, 4 decode input)
-               .4 LSTM inputs：attention, 
-                               last output (soft probability), 
-                               hard label, 
-                               last hidden vector (t-1)  
-               .4 decode inputs：attention, 
-                                 last output (soft probability), 
-                                 hard label, 
-                                 hidden vector (t)
-            """
-            attention = contexts # h after initialized 
-            probability = tf.zeros([config.batch_size, config.label_dim], tf.int32)
+            probability = tf.zeros([config.batch_size, config.label_index_length], tf.int32)
             hard_label = tf.zeros([config.batch_size, config.label_index_length], tf.int32)
             last_memory = initial_memory # C after initialized 
-
+            last_output = initial_output
         else:
             num_steps = 1
-        # last_state = last_memory, last_output
+        last_state = last_memory, last_output
 
 
         '''initializing variabel for pick label'''
         pick_hard_label = []
 
-        """for loop start:
-           LSTM predict time step: max_class_label_length"""
+
+        """ LSTM predict with time step:  max_class_label_length"""
         for idx in range(num_steps):
             # Attention mechanism
             with tf.variable_scope("attend"):
                 alpha = self.attend(contexts, last_output) # After Softmax
-                # contexts: cnn output, last_output: lstm output
                 context = tf.reduce_sum(contexts*tf.expand_dims(alpha, 2),
                                         axis = 1)
-                # tf.expend_dim(): Inserts a dim of 1 into tensor
+                          # tf.expend_dim(): Inserts a dim of 1 into tensor
+
                 if self.is_train:
                     alphas.append(tf.reshape(alpha, [-1]))
 
-
-            """Apply the LSTM....."""
             with tf.variable_scope("lstm"):
-                current_input = tf.concat([attention,  #attention input 
+                current_input = tf.concat([context,  #attention input 
                                            probability,     # last_oupput
-                                           hard_label, 
-                                           last_memory], 1)  # last hidden output
-
-                output, state = lstm(current_input, last_state)
+                                           hard_label], 1)
+                output, state = lstm(current_input, last_state) # state = (C, h)
                 memory, _ = state
 
 
             """Decode the expanded output of LSTM into a word"""
             with tf.variable_scope("decode"):
-                expanded_output = tf.concat([attention,
+                expanded_output = tf.concat([output,
+                                             context,
                                              probability,
-                                             hard_label,
-                                             memory],
+                                             hard_label],
                                              axis = 1)
                 """decode(): Last nn layers for predict"""                              
-                logits = self.decode(expanded_output) 
+                logits = self.decode(expanded_output)
+                label_reshape = tf.reshape(self.labels,  logits.get_shape())
                 probs = tf.nn.sigmoid(logits)     # Become next input
 
 
-                """Hard lable"""
+
+                """Generator Hard lable"""
                 pre_max_label = tf.argmax(probs)
                 if num_steps == 0:
                     pick_hard_label.append(pre_max_label)
                 else:
+                    step_max = tf.argmax(probs, axis=1)
+                    step_max_list.append(step_max)
+                    step_max_tensor = tf.stack(step_max_list, axis=1)
                     
+                    compare_max_list = []
+                    for i in range(idx):
+                        compare_max_list.append(step_max)
+                    compate_max_tensor = tf.stack(compare_max_list, axis=1)
 
+                    true_false_tensor = tf.reduce_sum(
+                                            tf.cast(
+                                                tf.equal(compate_max_tensor, step_max_tensor), 
+                                            dtype=tf.int32), 
+                                        axis=1)
 
-
-
-       
-                
+                    pred = []
+                    for i in range(config.batch_size):
+                        new_step_max = tf.cond( tf.equal(true_false_tensor[i], 0), 
+                                           true_fn=lambda: cond_true_fun(step_max[i]), # True
+                                           false_fn=lambda: cond_false_fun(probs[i], step_max_tensor[i])) # False
+                        pred.append(tf.one_hot(new_step_max, 
+                                               depth=config.label_index_length, 
+                                               dtype=tf.int32))
+                    hard_label = tf.add(hard_label, tf.stack(pred, axis=0))
                 #predictions.append(prediction)
 
 
-            # Compute the loss for this step, if necessary
+            """ Compute the loss for this step, if necessary. """
             if self.is_train:
                 cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
-                    labels = self.labels[:, idx], # make sure the dim.
+                    labels = label_reshape,
                     logits = logits)
                 cross_entropies.append(cross_entropy)
 
 
-                ground_truth = tf.cast(self.labels[:, idx], tf.int64)
-                prediction_correct = tf.where(
-                    tf.equal(prediction, ground_truth),
-                    tf.cast(tf.zeros_like(prediction), tf.float32))
-                predictions_correct.append(prediction_correct)
+                #ground_truth = tf.cast(label_reshape, tf.int64)
+                #prediction_correct = tf.where(
+                #    tf.equal(prediction, ground_truth),
+                #    tf.cast(tf.zeros_like(prediction), tf.float32))
+                #predictions_correct.append(prediction_correct)
+
 
                 # prepare to next step
-                attention = context # h after initialized 
                 probability = probs
-                hard_label =  
-                last_memory = memory # C after initialized 
-                
+                last_output = output
+                last_memory = memory
+                last_state = state
             tf.get_variable_scope().reuse_variables()
             """End: for loop"""
 
 
-        # Compute the final loss, if necessary
+        # Compute the final loss
         if self.is_train:
             cross_entropies = tf.stack(cross_entropies, axis = 1)
-            cross_entropy_loss = tf.reduce_sum(cross_entropies) \
-                                 / tf.reduce_sum(masks)
+            cross_entropy_loss = tf.reduce_sum(cross_entropies)
+
 
             alphas = tf.stack(alphas, axis = 1)
             alphas = tf.reshape(alphas, [config.batch_size, self.num_ctx, -1])
             attentions = tf.reduce_sum(alphas, axis = 2)
             diffs = tf.ones_like(attentions) - attentions
-            attention_loss = config.attention_loss_factor \
-                             * tf.nn.l2_loss(diffs) \
-                             / (config.batch_size * self.num_ctx)
+            attention_loss = (config.attention_loss_factor * 
+                              tf.nn.l2_loss(diffs) /
+                              (config.batch_size * self.num_ctx))
 
             reg_loss = tf.losses.get_regularization_loss()
-
             total_loss = cross_entropy_loss + attention_loss + reg_loss
 
-            predictions_correct = tf.stack(predictions_correct, axis = 1)
-            accuracy = tf.reduce_sum(predictions_correct) \
-                       / tf.reduce_sum(masks)
+            #predictions_correct = tf.stack(predictions_correct, axis = 1)
+            #accuracy = tf.reduce_sum(predictions_correct)
 
 
 
         self.contexts = contexts
         if self.is_train:
-            self.sentences = sentences
-            self.masks = masks
             self.total_loss = total_loss
             self.cross_entropy_loss = cross_entropy_loss
             self.attention_loss = attention_loss
             self.reg_loss = reg_loss
-            self.accuracy = accuracy
+            #self.accuracy = accuracy
             self.attentions = attentions
         else:
             self.initial_memory = initial_memory
@@ -392,7 +256,24 @@ class Multi_Label_Class(BaseModel):
             self.output = output
             self.probs = probs
         print("RNN built...........................")
-        # End: build_rnn()
+
+
+
+        """ function for tf.cond()"""
+        def cond_true_fun(step_max):
+            return step_max
+
+        def cond_false_fun(probs, step_max_tensor): 
+            probs = tf.subtract(
+                       probs, tf.reduce_sum(
+                                 tf.one_hot(
+                                    step_max_tensor, 
+                                    depth=config.label_index_length, 
+                                    dtype=tf.float64), 
+                               axis=0))
+            new_step_max = tf.argmax(probs, axis=0, output_type=tf.int64)
+            return new_step_max
+        ''' End: build_rnn() '''
 
 
 
@@ -400,41 +281,27 @@ class Multi_Label_Class(BaseModel):
         """ Initialize the LSTM using the mean context. """
         config = self.config
         context_mean = self.nn.dropout(context_mean)
-        if config.num_initalize_layers == 1:
-            # use 1 fc layer to initialize
-            memory = self.nn.dense(context_mean,
-                                   units = config.num_lstm_units,
-                                   activation = None,
-                                   name = 'fc_a')
-            output = self.nn.dense(context_mean,
-                                   units = config.num_lstm_units,
-                                   activation = None,
-                                   name = 'fc_b')
-        else:
-            # use 2 fc layers to initialize
-            temp1 = self.nn.dense(context_mean,
-                                  units = config.dim_initalize_layer,
-                                  activation = tf.tanh,
-                                  name = 'fc_a1')
-            temp1 = self.nn.dropout(temp1)
-            memory = self.nn.dense(temp1,
-                                   units = config.num_lstm_units,
-                                   activation = None,
-                                   name = 'fc_a2')
+        # use 2 fc layers to initialize
+        temp1 = self.nn.dense(context_mean,
+                                units = config.dim_initalize_layer, 
+                                activation = tf.tanh,
+                                name = 'fc_a1')
+        temp1 = self.nn.dropout(temp1)
+        memory = self.nn.dense(temp1,
+                                units = config.num_lstm_units, 
+                                activation = None,
+                                name = 'fc_a2')
 
-            temp2 = self.nn.dense(context_mean,
-                                  units = config.dim_initalize_layer,
-                                  activation = tf.tanh,
-                                  name = 'fc_b1')
-            temp2 = self.nn.dropout(temp2)
-            output = self.nn.dense(temp2,
-                                   units = config.num_lstm_units,
-                                   activation = None,
-                                   name = 'fc_b2')
+        temp2 = self.nn.dense(context_mean,
+                                units = config.dim_initalize_layer,
+                                activation = tf.tanh,
+                                name = 'fc_b1')
+        temp2 = self.nn.dropout(temp2)
+        output = self.nn.dense(temp2,
+                                units = config.num_lstm_units,
+                                activation = None,
+                                name = 'fc_b2')
         return memory, output
-
-
-
 
 
 
@@ -444,40 +311,25 @@ class Multi_Label_Class(BaseModel):
         reshaped_contexts = tf.reshape(contexts, [-1, self.dim_ctx])
         reshaped_contexts = self.nn.dropout(reshaped_contexts)
         output = self.nn.dropout(output)
-        if config.num_attend_layers == 1:
-            # use 1 fc layer to attend
-            logits1 = self.nn.dense(reshaped_contexts,
-                                    units = 1,
-                                    activation = None,
-                                    use_bias = False,
-                                    name = 'fc_a')
-            logits1 = tf.reshape(logits1, [-1, self.num_ctx])
-            logits2 = self.nn.dense(output,
-                                    units = self.num_ctx,
-                                    activation = None,
-                                    use_bias = False,
-                                    name = 'fc_b')
-            logits = logits1 + logits2
-        else:
-            # use 2 fc layers to attend
-            temp1 = self.nn.dense(reshaped_contexts,
-                                  units = config.dim_attend_layer,
-                                  activation = tf.tanh,
-                                  name = 'fc_1a')
-            temp2 = self.nn.dense(output,
-                                  units = config.dim_attend_layer,
-                                  activation = tf.tanh,
-                                  name = 'fc_1b')
-            temp2 = tf.tile(tf.expand_dims(temp2, 1), [1, self.num_ctx, 1])
-            temp2 = tf.reshape(temp2, [-1, config.dim_attend_layer])
-            temp = temp1 + temp2
-            temp = self.nn.dropout(temp)
-            logits = self.nn.dense(temp,
-                                   units = 1,
-                                   activation = None,
-                                   use_bias = False,
-                                   name = 'fc_2')
-            logits = tf.reshape(logits, [-1, self.num_ctx])
+        # use 2 fc layers to attend
+        temp1 = self.nn.dense(reshaped_contexts,
+                                units = config.dim_attend_layer,
+                                activation = tf.tanh,
+                                name = 'fc_1a')
+        temp2 = self.nn.dense(output,
+                                units = config.dim_attend_layer,
+                                activation = tf.tanh,
+                                name = 'fc_1b')
+        temp2 = tf.tile(tf.expand_dims(temp2, 1), [1, self.num_ctx, 1])
+        temp2 = tf.reshape(temp2, [-1, config.dim_attend_layer])
+        temp = temp1 + temp2
+        temp = self.nn.dropout(temp)
+        logits = self.nn.dense(temp,
+                                units = 1,
+                                activation = None,
+                                use_bias = False,
+                                name = 'fc_2')
+        logits = tf.reshape(logits, [-1, self.num_ctx])
         alpha = tf.nn.softmax(logits)
         return alpha
 
@@ -487,61 +339,23 @@ class Multi_Label_Class(BaseModel):
         """ Decode the expanded output of the LSTM into a word...."""
         config = self.config
         expanded_output = self.nn.dropout(expanded_output)
-        if config.num_decode_layers == 1:
-            # use 1 fc layer to decode
-            logits = self.nn.dense(expanded_output,
-                                   units = config.vocabulary_size,
-                                   activation = None,
-                                   name = 'fc')
-        else:
-            # use 2 fc layers to decode
-            temp = self.nn.dense(expanded_output,
-                                 units = config.dim_decode_layer,
-                                 activation = tf.tanh,
-                                 name = 'fc_1')
-            temp = self.nn.dropout(temp)
-            logits = self.nn.dense(temp,
-                                   units = config.vocabulary_size,
-                                   activation = None,
-                                   name = 'fc_2')
+        # use 2 fc layers to decode
+        temp = self.nn.dense(expanded_output,
+                                units = config.dim_decode_layer,
+                                activation = tf.tanh,
+                                name = 'fc_1')
+        temp = self.nn.dropout(temp)
+        logits = self.nn.dense(temp,
+                                units = config.label_index_length,
+                                activation = None,
+                                name = 'fc_2')
         return logits
 
 
 
-
-     def pick_hard_label(self, hard_label, probability):
-        def f1(pp):
-            return pp
-
-        def f2(prop, x): 
-            prop = tf.subtract(prop, tf.reduce_sum(tf.one_hot(x, depth=20, dtype=tf.float64), 0))#
-            pp = tf.argmax(prop, output_type=tf.int32)
-            return pp
-
-        pick = []
-        prop = tf.constant(np.random.uniform(0., 1., 20))
-        gg = tf.argmax(prop, output_type=tf.int32)
-        pick.append(gg)
-
-        for _ in range(20):
-            prop = tf.constant(np.random.uniform(0., 1., 20))
-            gg = tf.argmax(prop, output_type=tf.int32)
-            x = tf.stack(pick)
-            aa = tf.where(tf.equal(gg, x))
-            pp = tf.cond( tf.equal(tf.shape(aa)[0], 0), 
-                                true_fn=lambda: f1(gg), # True
-                                false_fn=lambda: f2(prop, x)) # False
-            pick.append(pp)
-            pred = tf.one_hot(pp, depth=20, dtype=tf.int32)
-            hard_label = tf.add(lable_pool, pred)
-        return hard_label
-
-
-
-
-
     def build_optimizer(self):
-        """ Setup the optimizer and training operation. """
+        """ opt_op : 
+            Setup the optimizer and training operation. """
         config = self.config
 
         learning_rate = tf.constant(config.initial_learning_rate)
@@ -556,6 +370,7 @@ class Multi_Label_Class(BaseModel):
             learning_rate_decay_fn = _learning_rate_decay_fn
         else:
             learning_rate_decay_fn = None
+
 
         with tf.variable_scope('optimizer', reuse = tf.AUTO_REUSE):
             if config.optimizer == 'Adam':
@@ -583,15 +398,13 @@ class Multi_Label_Class(BaseModel):
                 optimizer = tf.train.GradientDescentOptimizer(
                     learning_rate = config.initial_learning_rate
                 )
-
             opt_op = tf.contrib.layers.optimize_loss(
-                loss = self.total_loss,
-                global_step = self.global_step,
-                learning_rate = learning_rate,
-                optimizer = optimizer,
-                clip_gradients = config.clip_gradients,
-                learning_rate_decay_fn = learning_rate_decay_fn)
-
+                        loss = self.total_loss,
+                        global_step = self.global_step,
+                        learning_rate = learning_rate,
+                        optimizer = optimizer,
+                        clip_gradients = config.clip_gradients,
+                        learning_rate_decay_fn = learning_rate_decay_fn)
         self.opt_op = opt_op
 
 
@@ -602,23 +415,20 @@ class Multi_Label_Class(BaseModel):
             for var in tf.trainable_variables():
                 with tf.name_scope(var.name[:var.name.find(":")]):
                     self.variable_summary(var)
-
         with tf.name_scope("metrics"):
             tf.summary.scalar("cross_entropy_loss", self.cross_entropy_loss)
             tf.summary.scalar("attention_loss", self.attention_loss)
             tf.summary.scalar("reg_loss", self.reg_loss)
             tf.summary.scalar("total_loss", self.total_loss)
-            tf.summary.scalar("accuracy", self.accuracy)
-
+            #tf.summary.scalar("accuracy", self.accuracy)
         with tf.name_scope("attentions"):
             self.variable_summary(self.attentions)
-
         self.summary = tf.summary.merge_all()
 
 
 
     def variable_summary(self, var):
-        """ Build the summary for a variable. """
+        """ Build the summary for a variable...."""
         mean = tf.reduce_mean(var)
         tf.summary.scalar('mean', mean)
         stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))

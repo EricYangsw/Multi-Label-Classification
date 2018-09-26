@@ -12,21 +12,22 @@ class DataSet(object):
         self.config = config
         self.num_batches = 0
 
-    def train_data(self):
+    def train_data(self):   
         chunksize = self.config.batch_size * 500 # dataframe of iter
-        X_train = pd.read_csv(self.config.X_train_data, chunksize=chunksize)
-        Y_train = pd.read_csv(self.config.Y_train_data, chunksize=chunksize)
+        X_train = pd.read_csv(self.config.Y_train_data, chunksize=chunksize)
+        Y_train = pd.read_csv(self.config.X_train_data, chunksize=chunksize)
+
 
         '''Data size: [batc_size, h, w, rgb]'''
         for X_chunk, Y_chunk in(X_train, Y_train):
             '''Deal with each chunk.........'''
-            fearute_size = X_chunk.shape[1]
             X_batch = np.zeros((self.config.batch_size, 
                                 self.config.time_step, 
-                                fearute_size,
-                                1,))
+                                self.config.fearute_size,
+                                1))
             Y_batch =  np.zeros((self.config.batch_size,
-                                 fearute_size))
+                                 1,  # time step
+                                 self.config.fearute_size))
 
             data_count = X_batch.shape[0]
             batch = 0

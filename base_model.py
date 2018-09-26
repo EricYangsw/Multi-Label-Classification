@@ -22,14 +22,17 @@ class BaseModel(object):
         self.config = config
         self.is_train = True if config.phase == 'train' else False
         self.train_cnn = self.is_train and config.train_cnn
-        self.image_shape = [10, 8192, 1] # input shape
+        self.image_shape = [config.batch_size, 
+                            config.time_step, 
+                            config.fearute_size, 
+                            1] # input shape
         self.nn = NN(config) # Base cnn unit 
         self.global_step = tf.Variable(0,
                                        name = 'global_step',
                                        trainable = False)
         #self.image_loader = ImageLoader('./utils/ilsvrc_2012_mean.npy')
-        self.build() #Run building method
 
+        self.build() #Run building method
     def build(self):
         """Prepare to be overrided in child class"""
         raise NotImplementedError()
@@ -82,10 +85,8 @@ class BaseModel(object):
 
 
 
-
-
     def train(self, sess):
-        print("Training the model.........")
+        print("Training the model...........")
         config = self.config
 
         if not os.path.exists(config.summary_dir):
@@ -99,9 +100,8 @@ class BaseModel(object):
             for _ in tqdm(list(range(make_data.num_batches)), desc='batch'):
                 batch = train_data.__next__()
                 images, labels = batch
-                # images = self.image_loader.load_images(image_files)
-                feed_dict = {self.images: images,
-                             self.labels: labels}
+                feed_dict = {self.images: images, # in model,py
+                             self.labels: labels} # in model,py
                 _, summary, global_step = sess.run([self.opt_op, #in model.build_optimizer()
                                                     self.summary,#in model.build_summary()
                                                     self.global_step],
@@ -113,11 +113,10 @@ class BaseModel(object):
         train_writer.close()
         print("Training complete.....")
 
-        
 
 
 
-    def eval(self, sess, eval_gt_coco, eval_data, vocabulary):
+    def eval(self, sess, eval_data):
         print("Evaluating the model ...")
         config = self.config
 
@@ -129,6 +128,8 @@ class BaseModel(object):
         idx = 0
         for k in tqdm(list(range(eval_data.num_batches)), desc='batch'):
             batch = eval_data.next_batch()
+
+            # model output
             caption_data = self.beam_search(sess, batch, vocabulary)
 
             fake_cnt = 0 if k<eval_data.num_batches-1 \
@@ -162,6 +163,9 @@ class BaseModel(object):
         # scorer = COCOEvalCap(eval_gt_coco, eval_result_coco) //not import 
         scorer.evaluate()
         print("Evaluation complete.")
+
+
+
 
     def test(self, sess, test_data, vocabulary):
         """ Test the model using any given images. """
@@ -208,8 +212,26 @@ class BaseModel(object):
 
 
 
+    def save(self):
+        """ Save the model. """
+        config = self.config
+        data = {v.name: v.eval() for v in tf.global_variables()}
+        save_path = os.path.join(config.save_dir, str(self.global_step.eval()))
+
+        print((" Saving the model to %s..." % (save_path+".npy")))
+        np.save(save_path, data)
+        info_file = open(os.path.join(config.save_dir, "config.pickle"), "wb")
+        config_ = copy.copy(config)
+        config_.global_step = self.global_step.eval()
+        pickle.dump(config_, info_file)
+        info_file.close()
+        print("Model saved......")
+
+
+
+
     def beam_search(self, sess, image_files, vocabulary):
-        """Use beam search to generate the captions for a batch of images."""
+        '''Use beam search to generate the captions for a batch of images.'''
         # Feed in the images to get the contexts and the initial LSTM states
         config = self.config
         images = self.image_loader.load_images(image_files)
@@ -285,24 +307,4 @@ class BaseModel(object):
                 complete_caption_data[k] = partial_caption_data[k]
             results.append(complete_caption_data[k].extract(sort=True))
         return results
-
-
-
-    def save(self):
-        """ Save the model. """
-        config = self.config
-        data = {v.name: v.eval() for v in tf.global_variables()}
-        save_path = os.path.join(config.save_dir, str(self.global_step.eval()))
-
-        print((" Saving the model to %s..." % (save_path+".npy")))
-        np.save(save_path, data)
-        info_file = open(os.path.join(config.save_dir, "config.pickle"), "wb")
-        config_ = copy.copy(config)
-        config_.global_step = self.global_step.eval()
-        pickle.dump(config_, info_file)
-        info_file.close()
-        print("Model saved......")
-
-
-
 

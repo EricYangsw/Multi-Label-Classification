@@ -6,7 +6,6 @@ from model import Multi_Label_Class
 from dataset import DataSet
 
 FLAGS = tf.app.flags.FLAGS # transfer parameters of "tf.app.run( )" needed
-
 tf.flags.DEFINE_string('phase', 'train',
                        'The phase can be train, eval or test')
 tf.flags.DEFINE_boolean('load', False,
@@ -24,13 +23,15 @@ tf.flags.DEFINE_boolean('train_cnn', False,
 tf.flags.DEFINE_integer('beam_size', 3,
                         'The size of beam search for caption generation')
 
+
+
+
         
 def main(argv):
     config = Config()
     config.phase = FLAGS.phase
     config.train_cnn = FLAGS.train_cnn
     config.beam_size = FLAGS.beam_size
-
 
     with tf.Session() as sess:
         if FLAGS.phase == 'train':
