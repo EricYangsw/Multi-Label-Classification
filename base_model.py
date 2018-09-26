@@ -64,7 +64,7 @@ class BaseModel(object):
                 count += 1
         print("%d tensors loaded....." %count)
 
-
+  
 
 
     def load_cnn(self, session, data_path, ignore_missing=True):

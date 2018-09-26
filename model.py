@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from base_model import BaseModel
-
+  
 
 class Multi_Label_Class(BaseModel):
     def build(self):
@@ -21,11 +21,13 @@ class Multi_Label_Class(BaseModel):
         # Input 
         images = tf.placeholder(
                     dtype = tf.float32,
-                    shape = [config.batch_size] + self.image_shape) #image_shape in base_model.py
-
-        conv1_1_feats = self.nn.conv2d(images, 64, name = 'conv1_1') 
-        conv1_2_feats = self.nn.conv2d(conv1_1_feats, 64, name = 'conv1_2')
-        pool1_feats = self.nn.max_pool2d(conv1_2_feats, name = 'pool1')
+                    shape = self.image_shape) #image_shape in base_model.py
+        '''hight_out = (hight_in - hight_f + 2*padding)/stride  +1
+           width_out = (width_in - width_f + 2*padding)/stride  +1 
+        '''
+        conv1_1_feats = self.nn.conv2d(images, 64, name = 'conv1_1')        
+        conv1_2_feats = self.nn.conv2d(conv1_1_feats, 64, name = 'conv1_2') 
+        pool1_feats = self.nn.max_pool2d(conv1_2_feats, name = 'pool1')     
 
         conv2_1_feats = self.nn.conv2d(pool1_feats, 128, name = 'conv2_1')
         conv2_2_feats = self.nn.conv2d(conv2_1_feats, 128, name = 'conv2_2')
@@ -44,11 +46,12 @@ class Multi_Label_Class(BaseModel):
         conv5_1_feats = self.nn.conv2d(pool4_feats, 512, name = 'conv5_1')
         conv5_2_feats = self.nn.conv2d(conv5_1_feats, 512, name = 'conv5_2')
         conv5_3_feats = self.nn.conv2d(conv5_2_feats, 512, name = 'conv5_3')
+
         reshaped_conv5_3_feats = tf.reshape(conv5_3_feats,
-                                            [config.batch_size, 196, 512])
+                                            [config.batch_size, 13, 512])
         self.conv_feats = reshaped_conv5_3_feats # CNN output (into RNN)
 
-        self.num_ctx = 196
+        self.num_ctx = 13
         self.dim_ctx = 512
         self.images = images #?
 
@@ -65,8 +68,8 @@ class Multi_Label_Class(BaseModel):
         if self.is_train:
             contexts = self.conv_feats # come from CNN output
             self.labels = tf.placeholder(
-                dtype = tf.int32,
-                shape = [config.batch_size, 1, config.label_dim])
+                dtype = tf.float32,
+                shape = [config.batch_size, 1, config.label_index_length])
         else:
             contexts = tf.placeholder(
                 dtype = tf.float32,
@@ -113,8 +116,8 @@ class Multi_Label_Class(BaseModel):
             #predictions_correct = []
             num_steps = config.max_class_label_length
 
-            probability = tf.zeros([config.batch_size, config.label_index_length], tf.int32)
-            hard_label = tf.zeros([config.batch_size, config.label_index_length], tf.int32)
+            probability = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
+            hard_label = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
             last_memory = initial_memory # C after initialized 
             last_output = initial_output
         else:
@@ -162,7 +165,7 @@ class Multi_Label_Class(BaseModel):
 
                 """Generator Hard lable"""
                 pre_max_label = tf.argmax(probs)
-                if num_steps == 0:
+                if idx == 0:
                     pick_hard_label.append(pre_max_label)
                 else:
                     step_max = tf.argmax(probs, axis=1)
@@ -183,11 +186,11 @@ class Multi_Label_Class(BaseModel):
                     pred = []
                     for i in range(config.batch_size):
                         new_step_max = tf.cond( tf.equal(true_false_tensor[i], 0), 
-                                           true_fn=lambda: cond_true_fun(step_max[i]), # True
-                                           false_fn=lambda: cond_false_fun(probs[i], step_max_tensor[i])) # False
+                                           true_fn=lambda: self.cond_true_fun(step_max[i]), # True
+                                           false_fn=lambda: self.cond_false_fun(probs[i], step_max_tensor[i])) # False
                         pred.append(tf.one_hot(new_step_max, 
                                                depth=config.label_index_length, 
-                                               dtype=tf.int32))
+                                               dtype=tf.float32))
                     hard_label = tf.add(hard_label, tf.stack(pred, axis=0))
                 #predictions.append(prediction)
 
@@ -213,7 +216,7 @@ class Multi_Label_Class(BaseModel):
                 last_memory = memory
                 last_state = state
             tf.get_variable_scope().reuse_variables()
-            """End: for loop"""
+        """End: for loop"""
 
 
         # Compute the final loss
@@ -256,24 +259,26 @@ class Multi_Label_Class(BaseModel):
             self.output = output
             self.probs = probs
         print("RNN built...........................")
-
-
-
-        """ function for tf.cond()"""
-        def cond_true_fun(step_max):
-            return step_max
-
-        def cond_false_fun(probs, step_max_tensor): 
-            probs = tf.subtract(
-                       probs, tf.reduce_sum(
-                                 tf.one_hot(
-                                    step_max_tensor, 
-                                    depth=config.label_index_length, 
-                                    dtype=tf.float64), 
-                               axis=0))
-            new_step_max = tf.argmax(probs, axis=0, output_type=tf.int64)
-            return new_step_max
         ''' End: build_rnn() '''
+
+
+
+    """ function for tf.cond()"""
+    def cond_true_fun(self, step_max):
+        return step_max
+
+    def cond_false_fun(self, probs, step_max_tensor): 
+        config = self.config
+        step_max_tensor = tf.cast(step_max_tensor, tf.int32)
+        probs = tf.subtract(
+                    probs, tf.reduce_sum(
+                                tf.one_hot(
+                                step_max_tensor, 
+                                depth=config.label_index_length, 
+                                dtype=tf.float32), 
+                            axis=0))
+        new_step_max = tf.argmax(probs, axis=0, output_type=tf.int64)
+        return new_step_max    
 
 
 

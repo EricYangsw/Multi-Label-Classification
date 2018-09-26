@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import tensorflow as tf
-
 from config import Config
 from model import Multi_Label_Class
 from dataset import DataSet
@@ -26,7 +25,7 @@ tf.flags.DEFINE_integer('beam_size', 3,
 
 
 
-        
+         
 def main(argv):
     config = Config()
     config.phase = FLAGS.phase

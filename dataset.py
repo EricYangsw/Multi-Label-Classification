@@ -6,7 +6,7 @@ import tensorflow as tf
 from config import Config
 from tqdm import tqdm
        
-  
+     
 class DataSet(object):
     def __init__(self, config):
         self.config = config

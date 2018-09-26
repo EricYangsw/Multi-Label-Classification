@@ -20,13 +20,13 @@ class Config(object):
         
 
         # Data size
-        self.max_class_label_length = 250 # the number of "1" label in each data
-        self.label_index_length=4000
-        self.fearute_size = 4000
+        self.max_class_label_length = 100 # the number of "1" label in each data
+        self.label_index_length=200
+        self.fearute_size = 200
 
 
         # about the optimization
-        self.num_epochs = 100
+        self.num_epochs = 10
         self.batch_size = 32
         self.optimizer = 'Adam'    # 'Adam', 'RMSProp', 'Momentum' or 'SGD'
         self.initial_learning_rate = 0.0001
@@ -44,13 +44,13 @@ class Config(object):
 
         # about the saver
         self.save_period = 1000
-        self.save_dir = './models_8k/'
+        self.save_dir = './save_models/'
         self.summary_dir = './summary_8k/'
 
 
         # about the training
-        self.X_train_data = './train_data'
-        self.Y_train_data = './train_data'
+        self.X_train_data = './x_input.csv'
+        self.Y_train_data = './y_label.csv'
 
 
         self.time_step = 10
@@ -58,7 +58,7 @@ class Config(object):
         #self.temp_annotation_file = './train/anns.csv'
         self.temp_data_file = './train/data.npy'
 
-
+  
         # about the evaluation
         self.eval_image_dir = './val/images/'
         self.eval_caption_file = './val/captions_val2014.json'
