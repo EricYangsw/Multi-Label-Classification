@@ -48,12 +48,13 @@ class Multi_Label_Class(BaseModel):
         conv5_3_feats = self.nn.conv2d(conv5_2_feats, 512, name = 'conv5_3')
 
         reshaped_conv5_3_feats = tf.reshape(conv5_3_feats,
-                                            [config.batch_size, 13, 512])
+                                            [config.batch_size, 18, 512])
         self.conv_feats = reshaped_conv5_3_feats # CNN output (into RNN)
 
-        self.num_ctx = 13
+        self.num_ctx = 18
         self.dim_ctx = 512
         self.images = images #?
+
 
 
 

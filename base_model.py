@@ -70,11 +70,11 @@ class BaseModel(object):
     def load_cnn(self, session, data_path, ignore_missing=True):
         """ Load a pretrained CNN model. """
         print("Loading the CNN from %s..." %data_path)
-        data_dict = np.load(data_path).item()
+        data_dict = np.load(data_path, encoding = 'latin1').item()
         count = 0
         for op_name in tqdm(data_dict):
             with tf.variable_scope(op_name, reuse = True):
-                for param_name, data in data_dict[op_name].iteritems():
+                for param_name, data in data_dict[op_name].items():
                     try:
                         var = tf.get_variable(param_name)
                         session.run(var.assign(data))
@@ -116,6 +116,7 @@ class BaseModel(object):
 
 
 
+
     def eval(self, sess, eval_data):
         print("Evaluating the model ...")
         config = self.config
@@ -128,9 +129,13 @@ class BaseModel(object):
         idx = 0
         for k in tqdm(list(range(eval_data.num_batches)), desc='batch'):
             batch = eval_data.next_batch()
+            
 
+            ########################
             # model output
             caption_data = self.beam_search(sess, batch, vocabulary)
+
+
 
             fake_cnt = 0 if k<eval_data.num_batches-1 \
                          else eval_data.fake_count
@@ -153,7 +158,6 @@ class BaseModel(object):
                     plt.title(caption)
                     plt.savefig(os.path.join(config.eval_result_dir,
                                              image_name+'_result.jpg'))
-
         fp = open(config.eval_result_file, 'wb')
         json.dump(results, fp)
         fp.close()
@@ -162,7 +166,9 @@ class BaseModel(object):
         eval_result_coco = eval_gt_coco.loadRes(config.eval_result_file)
         # scorer = COCOEvalCap(eval_gt_coco, eval_result_coco) //not import 
         scorer.evaluate()
-        print("Evaluation complete.")
+        print("Evaluation complete........")
+
+
 
 
 
@@ -235,9 +241,14 @@ class BaseModel(object):
         # Feed in the images to get the contexts and the initial LSTM states
         config = self.config
         images = self.image_loader.load_images(image_files)
+ 
+        '''Run CNN to get initializing RNN input'''
         contexts, initial_memory, initial_output = sess.run(
-            [self.conv_feats, self.initial_memory, self.initial_output],
-            feed_dict = {self.images: images})
+                                  [self.conv_feats, 
+                                   self.initial_memory, 
+                                   self.initial_output],
+                                   feed_dict = {self.images: images})
+
 
         partial_caption_data = []
         complete_caption_data = []
@@ -274,12 +285,18 @@ class BaseModel(object):
                                         for pcl in partial_caption_data_lists],
                                         np.float32)
 
+
+
                 memory, output, scores = sess.run(
-                    [self.memory, self.output, self.probs],
-                    feed_dict = {self.contexts: contexts,
-                                 self.last_word: last_word,
-                                 self.last_memory: last_memory,
-                                 self.last_output: last_output})
+                               [self.memory, 
+                                self.output, 
+                                self.probs],
+                                feed_dict = {self.contexts: contexts,
+                                             self.last_word: last_word,
+                                             self.last_memory: last_memory,
+                                             self.last_output: last_output})
+
+
 
                 # Find the beam_size most probable next words
                 for k in range(config.batch_size):

@@ -20,9 +20,10 @@ class Config(object):
         
 
         # Data size
-        self.max_class_label_length = 100 # the number of "1" label in each data
-        self.label_index_length=200
-        self.fearute_size = 200
+        self.time_step = 30
+        self.max_class_label_length = 146 # the number of "1" label in each data
+        self.label_index_length = 223
+        self.fearute_size = 138
 
 
         # about the optimization
@@ -53,7 +54,6 @@ class Config(object):
         self.Y_train_data = './y_label.csv'
 
 
-        self.time_step = 10
         #self.train_caption_file = './train/captions_train2014.json'
         #self.temp_annotation_file = './train/anns.csv'
         self.temp_data_file = './train/data.npy'
