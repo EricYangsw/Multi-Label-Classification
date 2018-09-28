@@ -8,7 +8,7 @@ from dataset import DataSet
 FLAGS = tf.app.flags.FLAGS # transfer parameters of "tf.app.run( )" needed
 # Use ==================================
 tf.flags.DEFINE_string('phase', 'train',
-                       'The phase can be train, eval or test')
+                       'The phase can be train, eval')
 
 tf.flags.DEFINE_boolean('load_cnn', True,
                         'Turn on to load a pretrained CNN model')
@@ -38,37 +38,30 @@ def main(argv):
     config.phase = FLAGS.phase
     config.train_cnn = FLAGS.train_cnn
     FLAGS.load_cnn = FLAGS.load_cnn
-    # config.beam_size = FLAGS.beam_size
 
 
     with tf.Session() as sess:
-        if FLAGS.phase == 'train':
-            # training phase
-            model = Multi_Label_Class(config) # Already building model?
-            sess.run(tf.global_variables_initializer())
-            if FLAGS.load_cnn:
-                print('Load CNN is True........')
-                model.load_cnn(sess, FLAGS.cnn_model_file)
-            print('tf.get_default_graph().finalize()')
-            tf.get_default_graph().finalize() # Returns the default graph for the current thread.
-            model.train(sess) # Training model
-            
-'''
-        elif FLAGS.phase == 'eval':
-            # evaluation phase
-            model = Multi_Label_Class(config)
-            model.load(sess, FLAGS.model_file)
-            tf.get_default_graph().finalize()
-            model.eval(sess, coco, data, vocabulary)
+        #if FLAGS.phase == 'train':
+        # training phase
+        model = Multi_Label_Class(config) # Already building model?
+        sess.run(tf.global_variables_initializer())
+        if FLAGS.load_cnn:
+            print('Load CNN is True........')
+            model.load_cnn(sess, FLAGS.cnn_model_file)
+        print('tf.get_default_graph().finalize()')
+        tf.get_default_graph().finalize() # Returns the default graph for the current thread.
+        model.save()
+        model.train(sess) # Training model
+        
+        # elif FLAGS.phase == 'eval':
+        # evaluation phase
+        config.phase = 'eval'
+        model = Multi_Label_Class(config)
+        model.load(sess, FLAGS.model_file)
+        tf.get_default_graph().finalize()
+        model.eval(sess)
 
-        else:
-            # testing phase
-            data, vocabulary =  DataSet.test_data(config)
-            model = Multi_Label_Class(config)
-            model.load(sess, FLAGS.model_file)
-            tf.get_default_graph().finalize()
-            model.test(sess, data, vocabulary)
-'''
+
 if __name__ == '__main__':
     tf.app.run() 
     #Runs the program with an optional 'main' function and 'argv' list.

@@ -27,7 +27,7 @@ class Config(object):
 
 
         # about the optimization
-        self.num_epochs = 10
+        self.num_epochs = 1
         self.batch_size = 32
         self.optimizer = 'Adam'    # 'Adam', 'RMSProp', 'Momentum' or 'SGD'
         self.initial_learning_rate = 0.0001
@@ -53,22 +53,14 @@ class Config(object):
         self.X_train_data = './x_input.csv'
         self.Y_train_data = './y_label.csv'
 
-
-        #self.train_caption_file = './train/captions_train2014.json'
-        #self.temp_annotation_file = './train/anns.csv'
-        self.temp_data_file = './train/data.npy'
-
   
         # about the evaluation
-        self.eval_image_dir = './val/images/'
-        self.eval_caption_file = './val/captions_val2014.json'
-        self.eval_result_dir = './val/results/'
-        self.eval_result_file = './val/results.json'
+        self.eval_result_dir = './val_results/'
+        self.eval_result_file = './val_results/results.json'
         self.save_eval_result_as_image = False
 
 
         # about the testing
-        self.test_image_dir = './test/images/'
-        self.test_result_dir = './test/results/'
-        self.test_result_file = './test/results.csv'
+        self.test_result_dir = './test_results/'
+        self.test_result_file = './test_results/results.csv'
      

@@ -8,7 +8,7 @@ class Multi_Label_Class(BaseModel):
         """ Build all tensorflow model by called eachmethod...... """
         self.build_vgg16()
         self.build_rnn()
-        if self.is_train:
+        if self.is_train: # eval
             self.build_optimizer()
             self.build_summary()
 
@@ -53,7 +53,7 @@ class Multi_Label_Class(BaseModel):
 
         self.num_ctx = 18
         self.dim_ctx = 512
-        self.images = images #?
+        self.images = images 
 
 
 
@@ -65,25 +65,12 @@ class Multi_Label_Class(BaseModel):
         print("Building the RNN Model..........")
         config = self.config
 
+
         # Setup the placeholders
-        if self.is_train:
-            contexts = self.conv_feats # come from CNN output
-            self.labels = tf.placeholder(
-                dtype = tf.float32,
-                shape = [config.batch_size, 1, config.label_index_length])
-        else:
-            contexts = tf.placeholder(
-                dtype = tf.float32,
-                shape = [config.batch_size, self.num_ctx, self.dim_ctx])
-            last_memory = tf.placeholder(
-                dtype = tf.float32,
-                shape = [config.batch_size, config.num_lstm_units])
-            last_output = tf.placeholder(
-                dtype = tf.float32,
-                shape = [config.batch_size, config.num_lstm_units])
-            last_word = tf.placeholder( #?????
-                dtype = tf.int32,
-                shape = [config.batch_size])
+        contexts = self.conv_feats # come from CNN output
+        self.labels = tf.placeholder(
+            dtype = tf.float32,
+            shape = [config.batch_size, 1, config.label_index_length])
 
 
 
@@ -99,46 +86,38 @@ class Multi_Label_Class(BaseModel):
                       state_keep_prob = 1.0-config.lstm_drop_rate)
 
 
-
         """Initializing input data using the mean context"""
         with tf.variable_scope("initialize"):
             context_mean = tf.reduce_mean(self.conv_feats, axis = 1) # take mean of CNN output
             initial_memory, initial_output = self.initialize(context_mean) #Call initialize()
-            #initial_state = initial_memory, initial_output
+            initial_state = initial_memory, initial_output
+
 
 
         """ Prepare to run model..................."""
-        #predictions = []
+        num_steps = config.max_class_label_length
+        probability = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
+        hard_label = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
+        last_memory = initial_memory # C after initialized 
+        last_output = initial_output
+        last_state = last_memory, last_output
+
+        result_max_idx = []
+        result_max_value = []
         step_max_list = []
-        
+        pick_hard_label = [] # initializing variabel for pick label
         if self.is_train:
             alphas = [] # Parameters in attention operation
             cross_entropies = []
-            #predictions_correct = []
-            num_steps = config.max_class_label_length
-
-            probability = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
-            hard_label = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
-            last_memory = initial_memory # C after initialized 
-            last_output = initial_output
-        else:
-            num_steps = 1
-        last_state = last_memory, last_output
 
 
-        '''initializing variabel for pick label'''
-        pick_hard_label = []
-
-
-        """ LSTM predict with time step:  max_class_label_length"""
+        ''' LSTM predict with time step:  max_class_label_length'''
         for idx in range(num_steps):
             # Attention mechanism
             with tf.variable_scope("attend"):
                 alpha = self.attend(contexts, last_output) # After Softmax
                 context = tf.reduce_sum(contexts*tf.expand_dims(alpha, 2),
                                         axis = 1)
-                          # tf.expend_dim(): Inserts a dim of 1 into tensor
-
                 if self.is_train:
                     alphas.append(tf.reshape(alpha, [-1]))
 
@@ -150,24 +129,27 @@ class Multi_Label_Class(BaseModel):
                 memory, _ = state
 
 
-            """Decode the expanded output of LSTM into a word"""
+            '''Decode the expanded output of LSTM into a word'''
             with tf.variable_scope("decode"):
                 expanded_output = tf.concat([output,
                                              context,
                                              probability,
                                              hard_label],
                                              axis = 1)
-                """decode(): Last nn layers for predict"""                              
+                '''decode(): Last nn layers for predict'''                              
                 logits = self.decode(expanded_output)
                 label_reshape = tf.reshape(self.labels,  logits.get_shape())
-                probs = tf.nn.sigmoid(logits)     # Become next input
+                probs = tf.nn.sigmoid(logits)  # Become next input
 
 
-
-                """Generator Hard lable"""
+                '''Generator Hard lable'''
                 pre_max_label = tf.argmax(probs)
+
                 if idx == 0:
                     pick_hard_label.append(pre_max_label)
+                    if not self.is_train:
+                        result_max_idx.append(pre_max_label)
+                        result_max_value.append(tf.reduce_max(probs, reduction_indices=[1]))
                 else:
                     step_max = tf.argmax(probs, axis=1)
                     step_max_list.append(step_max)
@@ -185,6 +167,8 @@ class Multi_Label_Class(BaseModel):
                                         axis=1)
 
                     pred = []
+                    new_step_max_list = []
+                    new_step_max_value = []
                     for i in range(config.batch_size):
                         new_step_max = tf.cond( tf.equal(true_false_tensor[i], 0), 
                                            true_fn=lambda: self.cond_true_fun(step_max[i]), # True
@@ -192,8 +176,13 @@ class Multi_Label_Class(BaseModel):
                         pred.append(tf.one_hot(new_step_max, 
                                                depth=config.label_index_length, 
                                                dtype=tf.float32))
-                    hard_label = tf.add(hard_label, tf.stack(pred, axis=0))
-                #predictions.append(prediction)
+                        new_step_max_list.append(new_step_max)
+                        new_step_max_value.append(probs[new_step_max])
+
+                    if not self.is_train:
+                        result_max_idx.append(tf.stack(new_step_max_list))
+                        result_max_value.append(tf.stack(new_step_max_value))
+                        hard_label = tf.add(hard_label, tf.stack(pred, axis=0))
 
 
             """ Compute the loss for this step, if necessary. """
@@ -203,24 +192,20 @@ class Multi_Label_Class(BaseModel):
                     logits = logits)
                 cross_entropies.append(cross_entropy)
 
-
-                #ground_truth = tf.cast(label_reshape, tf.int64)
-                #prediction_correct = tf.where(
-                #    tf.equal(prediction, ground_truth),
-                #    tf.cast(tf.zeros_like(prediction), tf.float32))
-                #predictions_correct.append(prediction_correct)
-
-
-                # prepare to next step
+                # next step input
                 probability = probs
                 last_output = output
                 last_memory = memory
                 last_state = state
             tf.get_variable_scope().reuse_variables()
         """End: for loop"""
+        if not self.is_train:
+            self.final_prob_predict = tf.identity(logits, name='final_prob_predict')
+            self.final_result_max_idx = tf.stack(result_max_idx)
+            self.final_result_max_value = tf.stack(result_max_value)
 
 
-        # Compute the final loss
+        # Compute the final loss in Training Process
         if self.is_train:
             cross_entropies = tf.stack(cross_entropies, axis = 1)
             cross_entropy_loss = tf.reduce_sum(cross_entropies)
@@ -240,25 +225,12 @@ class Multi_Label_Class(BaseModel):
             #predictions_correct = tf.stack(predictions_correct, axis = 1)
             #accuracy = tf.reduce_sum(predictions_correct)
 
-
-
         self.contexts = contexts
-        if self.is_train:
-            self.total_loss = total_loss
-            self.cross_entropy_loss = cross_entropy_loss
-            self.attention_loss = attention_loss
-            self.reg_loss = reg_loss
-            #self.accuracy = accuracy
-            self.attentions = attentions
-        else:
-            self.initial_memory = initial_memory
-            self.initial_output = initial_output
-            self.last_memory = last_memory
-            self.last_output = last_output
-            self.last_word = last_word
-            self.memory = memory
-            self.output = output
-            self.probs = probs
+        self.total_loss = total_loss
+        self.cross_entropy_loss = cross_entropy_loss
+        self.attention_loss = attention_loss
+        self.reg_loss = reg_loss
+        self.attentions = attentions
         print("RNN built...........................")
         ''' End: build_rnn() '''
 
@@ -279,7 +251,7 @@ class Multi_Label_Class(BaseModel):
                                 dtype=tf.float32), 
                             axis=0))
         new_step_max = tf.argmax(probs, axis=0, output_type=tf.int64)
-        return new_step_max    
+        return new_step_max
 
 
 
@@ -412,6 +384,7 @@ class Multi_Label_Class(BaseModel):
                         clip_gradients = config.clip_gradients,
                         learning_rate_decay_fn = learning_rate_decay_fn)
         self.opt_op = opt_op
+
 
 
 
