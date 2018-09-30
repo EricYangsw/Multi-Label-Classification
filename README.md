@@ -64,7 +64,9 @@
 
     * LEARNING TO DIAGNOSE FROM SCRATCH BY EXPLOITING DEPENDENCIES AMONG LABELS  
       https://arxiv.org/pdf/1710.10501.pdf  
-
+      
+    * note：　ｉｎａｇｅ　ｃａｐｔｉｏｎｉｎｇ　ｃｏｄｅ:  
+      https://github.com/DeepRNN/image_captioning
 
 #### 比較 Object Detecting
     * Object Detecting 是想辦法將畫面切分成多個物件區域後在進行分類預測，其最複雜的地方在於定位，與Multi-Lable 有本質上的不同
