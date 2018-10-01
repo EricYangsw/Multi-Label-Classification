@@ -45,6 +45,7 @@ class Config(object):
 
         # about the saver
         self.save_period = 1000
+        self.show_loss = 20
         self.save_dir = './save_models/'
         self.summary_dir = './summary_8k/'
 
@@ -63,4 +64,5 @@ class Config(object):
         # about the testing
         self.test_result_dir = './test_results/'
         self.test_result_file = './test_results/results.csv'
+     
      

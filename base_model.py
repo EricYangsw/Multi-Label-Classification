@@ -90,26 +90,36 @@ class BaseModel(object):
         print("Training data generator...... ")
         make_data = DataSet(config)
         train_data = make_data.train_data()
-        for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
+        for epoch in tqdm(list(range(config.num_epochs)), desc='epoch'):
             for _ in tqdm(list(range(make_data.num_batches)), desc='batch'):
-                batch = train_data.__next__()
+                try:
+                    batch = train_data.__next__()
+                except:
+                    continue
                 images, labels = batch
                 feed_dict = {self.images: images, # in model,py
                              self.labels: labels} # in model,py
-                _, summary, global_step = sess.run([self.opt_op, #in model.build_optimizer()
-                                                    self.summary,#in model.build_summary()
-                                                    self.global_step],
-                                                    feed_dict=feed_dict)
+                _, summary, total_loss, global_step  = sess.run([
+                                                             self.opt_op, #in model.build_optimizer()
+                                                             self.summary,#in model.build_summary()
+                                                             self.total_loss,
+                                                             self.global_step],
+                                                             feed_dict=feed_dict)
+                print('gobal_step', global_step)
                 if (global_step + 1) % config.save_period == 0:
                     self.save()
+                if (global_step + 1) % config.show_loss == 0:
+                    print('epoch: {}, batch: {}, '.format(epoch, batch, total_loss))
                 train_writer.add_summary(summary, global_step)
+                
+                
 
         train_writer.close()
         print("Training complete.......")
 
 
 
-    def eval(self, sess):
+    def evals(self, sess):
         print("Evaluating the model.......")
         config = self.config
 
@@ -120,8 +130,11 @@ class BaseModel(object):
         make_data = DataSet(config)
         eval_data = make_data.eval_data()
         for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
-            for _ in tqdm(list(range(make_data.num_eval_batches)), desc='batch'):
-                batch = eval_data.__next__()
+            for i in tqdm(list(range(make_data.num_eval_batches)), desc='batch'):
+                try:
+                    batch = eval_data.__next__()
+                except:
+                    continue
                 images, labels = batch
                 feed_dict = {self.images: images, # in model,py
                                 self.labels: labels} # in model,py

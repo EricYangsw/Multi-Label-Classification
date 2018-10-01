@@ -143,7 +143,7 @@ class Multi_Label_Class(BaseModel):
 
 
                 '''Generator Hard lable'''
-                pre_max_label = tf.argmax(probs)
+                pre_max_label = tf.argmax(probs, axis=1)
 
                 if idx == 0:
                     pick_hard_label.append(pre_max_label)
@@ -177,7 +177,7 @@ class Multi_Label_Class(BaseModel):
                                                depth=config.label_index_length, 
                                                dtype=tf.float32))
                         new_step_max_list.append(new_step_max)
-                        new_step_max_value.append(probs[new_step_max])
+                        new_step_max_value.append(probs[i, new_step_max])
 
                     if not self.is_train:
                         result_max_idx.append(tf.stack(new_step_max_list))
@@ -225,12 +225,12 @@ class Multi_Label_Class(BaseModel):
             #predictions_correct = tf.stack(predictions_correct, axis = 1)
             #accuracy = tf.reduce_sum(predictions_correct)
 
-        self.contexts = contexts
-        self.total_loss = total_loss
-        self.cross_entropy_loss = cross_entropy_loss
-        self.attention_loss = attention_loss
-        self.reg_loss = reg_loss
-        self.attentions = attentions
+            self.total_loss = total_loss
+            self.cross_entropy_loss = cross_entropy_loss
+            self.attention_loss = attention_loss
+            self.reg_loss = reg_loss
+            self.attentions = attentions
+            self.contexts = contexts
         print("RNN built...........................")
         ''' End: build_rnn() '''
 

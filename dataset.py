@@ -10,8 +10,9 @@ from tqdm import tqdm
 class DataSet(object):
     def __init__(self, config):
         self.config = config
-        self.num_batches = 0
-        self.num_eval_batches = 0
+        self.num_batches = int((4000-9)*34/config.batch_size)
+        self.num_eval_batches = int((4000-9)*8/config.batch_size)
+
 
 
     def train_data(self):   
@@ -37,8 +38,8 @@ class DataSet(object):
                                  1,  # time step
                                  self.config.label_index_length))
 
-            data_input = pd.read_csv(path_input+'/'+filelist_input[no_file], index_col=0).values
-            data_label = pd.read_csv(path_label+'/'+filelist_label[no_file], index_col=0).values
+            data_input = pd.read_csv(path_input+'/'+'y_data_'+str(no_file)+'.csv', index_col=0).values
+            data_label = pd.read_csv(path_label+'/'+'x_data_'+str(no_file)+'.csv', index_col=0).values
             assert data_input.shape[0] == data_label.shape[0]
 
             data_count = data_input.shape[0]
@@ -49,7 +50,6 @@ class DataSet(object):
                 batch += 1
                 if batch == self.config.batch_size:
                     batch = 0
-                    self.num_batches += 1
                     yield (batch_input, batch_label)
                      
 
@@ -68,7 +68,7 @@ class DataSet(object):
         assert len(filelist_input) == len(filelist_label) #False to tigger
 
         file_count = len(filelist_input)
-
+        batch = 0
         '''Data size: [batc_size, h, w, rgb]'''
         for no_file in range(34, file_count):
             batch_input = np.zeros((self.config.batch_size, 
@@ -79,8 +79,8 @@ class DataSet(object):
                                  1,  # time step
                                  self.config.label_index_length))
 
-            data_input = pd.read_csv(path_input+'/'+filelist_input[no_file], index_col=0).values
-            data_label = pd.read_csv(path_label+'/'+filelist_label[no_file], index_col=0).values
+            data_input = pd.read_csv(path_input+'/'+'y_data_'+str(no_file)+'.csv', index_col=0).values
+            data_label = pd.read_csv(path_label+'/'+'x_data_'+str(no_file)+'.csv', index_col=0).values
             assert data_input.shape[0] == data_label.shape[0]
 
             data_count = data_input.shape[0]
@@ -91,7 +91,4 @@ class DataSet(object):
                 batch += 1
                 if batch == self.config.batch_size:
                     batch = 0
-                    self.num_eval_batches += 1
                     yield (batch_input, batch_label)
-        
-    
