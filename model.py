@@ -5,7 +5,7 @@ from base_model import BaseModel
 
 class Multi_Label_Class(BaseModel):
     def build(self):
-        """ Build all tensorflow model by called eachmethod...... """
+        """ Build all tensorflow model by called each method...... """
         self.build_vgg16()
         self.build_rnn()
         if self.is_train: # eval
@@ -59,9 +59,9 @@ class Multi_Label_Class(BaseModel):
 
 
 
-#======================================================
+#=========================================================
     def build_rnn(self):
-        """ Build the RNN................... """
+        ''' Build the RNN................... '''
         print("Building the RNN Model..........")
         config = self.config
 
@@ -69,12 +69,13 @@ class Multi_Label_Class(BaseModel):
         # Setup the placeholders
         contexts = self.conv_feats # come from CNN output
         self.labels = tf.placeholder(
-            dtype = tf.float32,
-            shape = [config.batch_size, 1, config.label_index_length])
+                      dtype = tf.float32,
+                      shape = [config.batch_size, 
+                               1, 
+                               config.label_index_length])
 
 
-
-        """Building LSTM cell with Dropout.........."""
+        '''Building LSTM cell with Dropout..........'''
         lstm = tf.nn.rnn_cell.LSTMCell(
                      config.num_lstm_units,
                      initializer = self.nn.fc_kernel_initializer)
@@ -86,15 +87,15 @@ class Multi_Label_Class(BaseModel):
                       state_keep_prob = 1.0-config.lstm_drop_rate)
 
 
-        """Initializing input data using the mean context"""
+        '''Initializing input data using the mean context...'''
         with tf.variable_scope("initialize"):
             context_mean = tf.reduce_mean(self.conv_feats, axis = 1) # take mean of CNN output
             initial_memory, initial_output = self.initialize(context_mean) #Call initialize()
-            initial_state = initial_memory, initial_output
+            #initial_state = initial_memory, initial_output
 
 
 
-        """ Prepare to run model..................."""
+        ''' Prepare to run model...................'''
         num_steps = config.max_class_label_length
         probability = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
         hard_label = tf.zeros([config.batch_size, config.label_index_length], tf.float32)
@@ -104,15 +105,13 @@ class Multi_Label_Class(BaseModel):
 
         result_max_idx = []
         result_max_value = []
-        step_max_list = []
-        pick_hard_label = [] # initializing variabel for pick label
         if self.is_train:
             alphas = [] # Parameters in attention operation
             cross_entropies = []
 
 
         ''' LSTM predict with time step:  max_class_label_length'''
-        for idx in range(num_steps):
+        for _ in range(num_steps):
             # Attention mechanism
             with tf.variable_scope("attend"):
                 alpha = self.attend(contexts, last_output) # After Softmax
@@ -123,7 +122,7 @@ class Multi_Label_Class(BaseModel):
 
             with tf.variable_scope("lstm"):
                 current_input = tf.concat([context,  #attention input 
-                                           probability,     # last_oupput
+                                           probability,     
                                            hard_label], 1)
                 output, state = lstm(current_input, last_state) # state = (C, h)
                 memory, _ = state
@@ -142,55 +141,26 @@ class Multi_Label_Class(BaseModel):
                 probs = tf.nn.sigmoid(logits)  # Become next input
 
 
-                '''Generator Hard lable'''
-                pre_max_label = tf.argmax(probs, axis=1)
+            '''Generator Hard lable'''
+            compare_probs = tf.subtract(probs, hard_label)
+            max_value = tf.reduce_max(compare_probs, axis=1)
+            max_id = tf.argmax(compare_probs, axis=1)
+            hard_label = tf.add(hard_label, 
+                            tf.cast(
+                                tf.equal(compare_probs, 
+                                    tf.expand_dims(max_value, 1)), tf.float32))
+            if not self.is_train:
+                result_max_value.append(max_value)
+                result_max_idx.append(max_id)
 
-                if idx == 0:
-                    pick_hard_label.append(pre_max_label)
-                    if not self.is_train:
-                        result_max_idx.append(pre_max_label)
-                        result_max_value.append(tf.reduce_max(probs, reduction_indices=[1]))
-                else:
-                    step_max = tf.argmax(probs, axis=1)
-                    step_max_list.append(step_max)
-                    step_max_tensor = tf.stack(step_max_list, axis=1)
-                    
-                    compare_max_list = []
-                    for i in range(idx):
-                        compare_max_list.append(step_max)
-                    compate_max_tensor = tf.stack(compare_max_list, axis=1)
-
-                    true_false_tensor = tf.reduce_sum(
-                                            tf.cast(
-                                                tf.equal(compate_max_tensor, step_max_tensor), 
-                                            dtype=tf.int32), 
-                                        axis=1)
-
-                    pred = []
-                    new_step_max_list = []
-                    new_step_max_value = []
-                    for i in range(config.batch_size):
-                        new_step_max = tf.cond( tf.equal(true_false_tensor[i], 0), 
-                                           true_fn=lambda: self.cond_true_fun(step_max[i]), # True
-                                           false_fn=lambda: self.cond_false_fun(probs[i], step_max_tensor[i])) # False
-                        pred.append(tf.one_hot(new_step_max, 
-                                               depth=config.label_index_length, 
-                                               dtype=tf.float32))
-                        new_step_max_list.append(new_step_max)
-                        new_step_max_value.append(probs[i, new_step_max])
-
-                    if not self.is_train:
-                        result_max_idx.append(tf.stack(new_step_max_list))
-                        result_max_value.append(tf.stack(new_step_max_value))
-                        hard_label = tf.add(hard_label, tf.stack(pred, axis=0))
 
 
             """ Compute the loss for this step, if necessary. """
             if self.is_train:
                 cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
-                    labels = label_reshape,
-                    logits = logits)
-                cross_entropies.append(cross_entropy)
+                                labels = label_reshape,
+                                logits = logits)
+                cross_entropies.append(cross_entropy) #loss of each step
 
                 # next step input
                 probability = probs
@@ -198,9 +168,11 @@ class Multi_Label_Class(BaseModel):
                 last_memory = memory
                 last_state = state
             tf.get_variable_scope().reuse_variables()
-        """End: for loop"""
+        '''End: for loop'''
+        
+
         if not self.is_train:
-            self.final_prob_predict = tf.identity(logits, name='final_prob_predict')
+            self.final_prob_predict = tf.identity(probs, name='final_prob_predict')
             self.final_result_max_idx = tf.stack(result_max_idx)
             self.final_result_max_value = tf.stack(result_max_value)
 
@@ -235,23 +207,6 @@ class Multi_Label_Class(BaseModel):
         ''' End: build_rnn() '''
 
 
-
-    """ function for tf.cond()"""
-    def cond_true_fun(self, step_max):
-        return step_max
-
-    def cond_false_fun(self, probs, step_max_tensor): 
-        config = self.config
-        step_max_tensor = tf.cast(step_max_tensor, tf.int32)
-        probs = tf.subtract(
-                    probs, tf.reduce_sum(
-                                tf.one_hot(
-                                step_max_tensor, 
-                                depth=config.label_index_length, 
-                                dtype=tf.float32), 
-                            axis=0))
-        new_step_max = tf.argmax(probs, axis=0, output_type=tf.int64)
-        return new_step_max
 
 
 

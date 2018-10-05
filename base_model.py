@@ -82,6 +82,7 @@ class BaseModel(object):
     def train(self, sess):
         print("Training the model...........")
         config = self.config
+        loss_train_data = []
 
         if not os.path.exists(config.summary_dir):
             os.mkdir(config.summary_dir)
@@ -95,61 +96,85 @@ class BaseModel(object):
                 try:
                     batch = train_data.__next__()
                 except:
+                    loss_train_data.append(_)
                     continue
                 images, labels = batch
                 feed_dict = {self.images: images, # in model,py
                              self.labels: labels} # in model,py
-                _, summary, total_loss, global_step  = sess.run([
+                _, summary, cross_entropy_loss, global_step  = sess.run([
                                                              self.opt_op, #in model.build_optimizer()
                                                              self.summary,#in model.build_summary()
-                                                             self.total_loss,
+                                                             self.cross_entropy_loss,
                                                              self.global_step],
                                                              feed_dict=feed_dict)
                 print('gobal_step', global_step)
                 if (global_step + 1) % config.save_period == 0:
                     self.save()
                 if (global_step + 1) % config.show_loss == 0:
-                    print('epoch: {}, batch: {}, '.format(epoch, batch, total_loss))
+                    print('epoch: {}, batch: {}, Loss{}'.format(epoch, batch, cross_entropy_loss))
                 train_writer.add_summary(summary, global_step)
-                
-                
-
         train_writer.close()
         print("Training complete.......")
+        print("loss_train_data: ", loss_train_data)
+
 
 
 
     def evals(self, sess):
         print("Evaluating the model.......")
         config = self.config
-
+        loss_eval_data = []
         if not os.path.exists(config.eval_result_dir):
             os.mkdir(config.eval_result_dir)
 
         # Generate the captions for the images
         make_data = DataSet(config)
         eval_data = make_data.eval_data()
-        for _ in tqdm(list(range(config.num_epochs)), desc='epoch'):
-            for i in tqdm(list(range(make_data.num_eval_batches)), desc='batch'):
-                try:
-                    batch = eval_data.__next__()
-                except:
-                    continue
-                images, labels = batch
-                feed_dict = {self.images: images, # in model,py
-                                self.labels: labels} # in model,py
-                final_prob_predict, final_result_max_idx, final_result_max_value = sess.run(
-                                                [self.final_prob_predict, 
-                                                self.final_result_max_idx,
-                                                self.final_result_max_value], 
-                                                feed_dict=feed_dict)
+
+        count = 0
+        total = 0
+        for i in tqdm(list(range(make_data.num_eval_batches)), desc='batch'):
+            try:
+                batch = eval_data.__next__()
+            except:
+                loss_eval_data.append(i)
+                continue
+            images, labels = batch
+            feed_dict = {self.images: images, # in model,py
+                            self.labels: labels} # in model,py
+            final_prob_predict, final_result_max_idx, final_result_max_value = sess.run(
+                                            [self.final_prob_predict, 
+                                            self.final_result_max_idx,
+                                            self.final_result_max_value], 
+                                            feed_dict=feed_dict)
+
             
-                label_reshape = np.reshape(labels,  final_prob_predict.shape)
-                np.savetxt("./val_results/final_prob_predict_" + str(i) + ".csv", final_prob_predict, delimiter=',')
-                np.savetxt("./val_results/labels_" + str(i) + ".csv", label_reshape, delimiter=',')
-                np.savetxt("./val_results/final_result_max_idx_" + str(i) + ".csv", final_result_max_idx, delimiter=',')
-                np.savetxt("./val_results/final_result_max_value_" + str(i) + ".csv",final_result_max_value, delimiter=',')
+            
+            label_reshape = np.reshape(labels,  final_prob_predict.shape)
+
+            c, t = self.error(final_prob_predict, label_reshape, i)
+            count += c
+            total += t
+            
+
+
+            #np.savetxt("./val_results/final_prob_predict_" + str(i) + ".csv", final_prob_predict, delimiter=',')
+            #np.savetxt("./val_results/labels_" + str(i) + ".csv", label_reshape, delimiter=',')
+            np.savetxt("./val_results/final_result_max_idx_" + str(i) + ".csv", final_result_max_idx, delimiter=',')
+            np.savetxt("./val_results/final_result_max_value_" + str(i) + ".csv",final_result_max_value, delimiter=',')
+        self.err = count / total
+        print('Total accurate: ', self.err)
         print("Evaluation complete........")
+        print("Loss batch eval data: ", loss_eval_data)
+    
+
+    def error(self, pred, target, i):
+        pred = np.array(pred >= 0.5).astype(int)
+        result = np.abs(pred - target)
+        count = np.sum(result)
+        total = result.size
+        np.savetxt("./val_results/result_" + str(i) + ".csv", result, delimiter=',')
+        return count, total
 
 
     def save(self):

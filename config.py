@@ -24,6 +24,7 @@ class Config(object):
         self.max_class_label_length = 146 # the number of "1" label in each data
         self.label_index_length = 223
         self.fearute_size = 138
+        self.train_ratio = 0.8
 
 
         # about the optimization
