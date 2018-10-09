@@ -73,9 +73,8 @@ def dense_rows_iter(dense, dtype='f'):
     for i in range(dense.shape[0]):
         rest = struct.pack(dtype * n, *dense[i])
         yield size + rest
- 
-class Trainer(object):
 
+class Trainer(object):
     def __init__(self, n_trees=1, max_leaf_size=10, max_labels_per_leaf=20,
             re_split=0, n_jobs=1, alpha=1e-4, n_epochs=2, n_updates=100, bias=True, 
             subsample=1, loss='log', sparse_multiple=25, leaf_classifiers=False,
@@ -231,17 +230,17 @@ class Trainer(object):
             # Write out dense tree
             with open(fname('tree'), 'w') as out:
                 for line in dense_rows_iter(tree.tree, 'I'):
-                    out.write(line.decode("utf-8"))
+                    out.write(str(line, encoding = "utf-16"))
 
             # Write out weights
             with open(fname('weights'), 'w') as out:
                 for line in sparse_rows_iter(tree.W):
-                    out.write(line.decode("utf-8"))
+                    out.write(line.decode("utf-16"))
 
             # Write bias
             with open(fname('bias'), 'w') as out:
                 for line in dense_rows_iter(tree.b.reshape((1,-1))):
-                    out.write(line.decode("utf-8"))
+                    out.write(line.decode("utf-16"))
 
             # Write Probabilities
             with open(fname('probs'), 'w') as out:
@@ -355,7 +354,7 @@ class Trainer(object):
 
     def generate_idxs(self, dataset_len):
         if self.subsample == 1:
-            return repeat(range(dataset_len))
+            return repeat([no for no in range(dataset_len)])
 
         batch_size = int(dataset_len * self.subsample) \
                 if self.subsample < 1 else self.subsample
@@ -365,7 +364,7 @@ class Trainer(object):
 
         def gen(bs):
             rs = np.random.RandomState(seed=self.seed + 1000)
-            idxs = range(dataset_len)
+            idxs = [no for no in range(dataset_len)]
             while True:
                 rs.shuffle(idxs)
                 yield idxs[:bs]

@@ -48,10 +48,10 @@ class Multi_Label_Class(BaseModel):
         conv5_3_feats = self.nn.conv2d(conv5_2_feats, 512, name = 'conv5_3')
 
         reshaped_conv5_3_feats = tf.reshape(conv5_3_feats,
-                                            [config.batch_size, 18, 512])
+                                            [config.batch_size, 45, 512])
         self.conv_feats = reshaped_conv5_3_feats # CNN output (into RNN)
 
-        self.num_ctx = 18
+        self.num_ctx = 45
         self.dim_ctx = 512
         self.images = images 
 
@@ -180,7 +180,7 @@ class Multi_Label_Class(BaseModel):
         # Compute the final loss in Training Process
         if self.is_train:
             cross_entropies = tf.stack(cross_entropies, axis = 1)
-            cross_entropy_loss = tf.reduce_sum(cross_entropies)
+            cross_entropy_loss = tf.reduce_mean(cross_entropies)
 
 
             alphas = tf.stack(alphas, axis = 1)

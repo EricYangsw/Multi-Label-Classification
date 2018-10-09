@@ -70,7 +70,7 @@ class BaseModel(object):
                 print('Variabel name: ', op_name) # Make sure variable name
                 for param_name, data in data_dict[op_name].items():
                     try:
-                        var = tf.get_variable(param_name)
+                        var = tf.get_variable(param_name, trainable=False)
                         session.run(var.assign(data))
                         count += 1
                     except ValueError:
@@ -88,11 +88,12 @@ class BaseModel(object):
             os.mkdir(config.summary_dir)
         train_writer = tf.summary.FileWriter(config.summary_dir,
                                              sess.graph)
-        print("Training data generator...... ")
-        make_data = DataSet(config)
-        train_data = make_data.train_data()
+        
         for epoch in tqdm(list(range(config.num_epochs)), desc='epoch'):
-            for _ in tqdm(list(range(make_data.num_batches)), desc='batch'):
+            print("Training data generator in {} Epoch...".format(epoch))
+            make_data = DataSet(config)
+            train_data = make_data.train_data()
+            for ba in tqdm(list(range(make_data.num_batches)), desc='batch'):
                 try:
                     batch = train_data.__next__()
                 except:
@@ -111,7 +112,7 @@ class BaseModel(object):
                 if (global_step + 1) % config.save_period == 0:
                     self.save()
                 if (global_step + 1) % config.show_loss == 0:
-                    print('epoch: {}, batch: {}, Loss{}'.format(epoch, batch, cross_entropy_loss))
+                    print('epoch: {}, batch: {}, Loss: {}'.format(epoch, ba, cross_entropy_loss))
                 train_writer.add_summary(summary, global_step)
         train_writer.close()
         print("Training complete.......")
@@ -163,7 +164,7 @@ class BaseModel(object):
             np.savetxt("./val_results/final_result_max_idx_" + str(i) + ".csv", final_result_max_idx, delimiter=',')
             np.savetxt("./val_results/final_result_max_value_" + str(i) + ".csv",final_result_max_value, delimiter=',')
         self.err = count / total
-        print('Total accurate: ', self.err)
+        print('Total err: ', self.err)
         print("Evaluation complete........")
         print("Loss batch eval data: ", loss_eval_data)
     

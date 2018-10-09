@@ -5,7 +5,7 @@ class Config(object):
         self.num_lstm_units = 512  
         self.dim_initalize_layer = 512
         self.dim_attend_layer = 512
-        self.dim_decode_layer = 1024
+        self.dim_decode_layer = 512
 
 
         # about the weight initialization and regularization
@@ -15,12 +15,12 @@ class Config(object):
         self.conv_kernel_regularizer_scale = 1e-4
         self.conv_activity_regularizer_scale = 0.0
         self.fc_drop_rate = 0.5
-        self.lstm_drop_rate = 0.3
+        self.lstm_drop_rate = 0.5
         self.attention_loss_factor = 0.01
         
 
         # Data size
-        self.time_step = 30
+        self.time_step = 70
         self.max_class_label_length = 146 # the number of "1" label in each data
         self.label_index_length = 223
         self.fearute_size = 138
@@ -28,7 +28,7 @@ class Config(object):
 
 
         # about the optimization
-        self.num_epochs = 1
+        self.num_epochs = 200
         self.batch_size = 32
         self.optimizer = 'Adam'    # 'Adam', 'RMSProp', 'Momentum' or 'SGD'
         self.initial_learning_rate = 0.0001
