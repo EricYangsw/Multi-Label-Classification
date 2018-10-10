@@ -157,12 +157,17 @@ class BaseModel(object):
             count += c
             total += t
             
-
-
-            #np.savetxt("./val_results/final_prob_predict_" + str(i) + ".csv", final_prob_predict, delimiter=',')
-            #np.savetxt("./val_results/labels_" + str(i) + ".csv", label_reshape, delimiter=',')
-            np.savetxt("./val_results/final_result_max_idx_" + str(i) + ".csv", final_result_max_idx, delimiter=',')
-            np.savetxt("./val_results/final_result_max_value_" + str(i) + ".csv",final_result_max_value, delimiter=',')
+            ''' Take the input & output'''
+            if (c/t) >= 0.88:
+                images = np.resize(images, (-1, config.fearute_size)).astype(np.int)
+                idx_output = np.zeros((images.shape[0], config.max_class_label_length), dtype=np.int)
+                for le in config.batch_size:
+                    raw = config.time_step*le + config.time_step-1
+                    idx_output[raw,:] = final_result_max_idx[:, le].astype(np.int)
+                
+                np.savetxt("./val_results/input_maxidx" + str(i) + ".csv", np.hstack((images, idx_output)), delimiter=',')
+                np.savetxt("./val_results/final_result_max_idx_" + str(i) + ".csv", final_result_max_idx, delimiter=',')
+                np.savetxt("./val_results/final_result_max_value_" + str(i) + ".csv",final_result_max_value, delimiter=',')
         self.err = count / total
         print('Total err: ', self.err)
         print("Evaluation complete........")
